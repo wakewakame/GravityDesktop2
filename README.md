@@ -1,3 +1,5 @@
+![demo](image/demo.gif)
+
 # Gravity Desktop 2
 大学4年のときに作成した、デスクトップにあるアイコンが落下運動をするジョークソフトです。
 
