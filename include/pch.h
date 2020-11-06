@@ -42,6 +42,11 @@
 #include <exception>
 #include <memory>
 #include <stdexcept>
+#include <string>
+#include <map>
+#include <vector>
+#include <codecvt>
+#include <locale>
 
 namespace DX
 {
@@ -54,7 +59,7 @@ namespace DX
         }
     }
 }
-/*
+
 #include "BufferHelpers.h"
 #include "CommonStates.h"
 #include "DDSTextureLoader.h"
@@ -74,4 +79,3 @@ namespace DX
 #include "SpriteFont.h"
 #include "VertexTypes.h"
 #include "WICTextureLoader.h"
-*/

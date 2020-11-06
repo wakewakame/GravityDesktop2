@@ -1,12 +1,8 @@
 #include "window.h"
-#include "pch.h"
-#include "Game.h"
-
-#include <vector>
-#include <codecvt>
-#include <locale>
 
 using namespace DirectX;
+
+using Microsoft::WRL::ComPtr;
 
 extern "C"
 {
@@ -14,211 +10,411 @@ extern "C"
     __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
 }
 
-size_t gd::Windows::createCount = 0;
-
-gd::Windows::Windows(HINSTANCE hInstance, int nCmdShow) : hInstance(hInstance), nCmdShow(nCmdShow)
+gd::Window::Window() noexcept :
+    m_window(nullptr),
+    m_outputWidth(800),
+    m_outputHeight(600),
+    m_featureLevel(D3D_FEATURE_LEVEL_9_1)
 {
-    // DirectXMathライブラリが使用可能かを確認する
-    if (!XMVerifyCPUSupport()) { error(L"このPCではDirectXMathが利用できません。"); }
-
-    // 現在のスレッドでCOMライブラリを初期化する
-    HRESULT hr = CoInitializeEx(nullptr, COINITBASE_MULTITHREADED);
-    if (FAILED(hr)) { error(L"COMライブラリの初期化に失敗しました。"); }
 }
 
-gd::Windows::~Windows()
+// Initialize the Direct3D resources required to run.
+void gd::Window::Initialize(HWND window, int width, int height)
 {
+    m_window = window;
+    m_outputWidth = std::max(width, 1);
+    m_outputHeight = std::max(height, 1);
+
+    CreateDevice();
+
+    CreateResources();
+
+    // TODO: Change the timer settings if you want something other than the default variable timestep mode.
+    // e.g. for 60 FPS fixed timestep update logic, call:
     /*
-    次のようなプログラムはイテレータの破壊を起こします。
-    
-    for (auto gameItr = games.begin(); gameItr != games.end(); ++gameItr)
-    {
-        DestroyWindow(gameItr->first);
-    }
-    
-    これはDestroyWindowの中で処理がWinProcにディスパッチされ、その中でgames.eraseが実行されるためです。
-    これを避けるため、ウィンドウハンドルの配列を作成してからウィンドウを破棄します。
+    m_timer.SetFixedTimeStep(true);
+    m_timer.SetTargetElapsedSeconds(1.0 / 60);
     */
-
-    // 全てのウィンドウハンドルを取得する
-    std::vector<HWND> hwndArray;
-    hwndArray.reserve(games.size());
-    for (auto gameItr = games.begin(); gameItr != games.end(); ++gameItr)
-    {
-        hwndArray.push_back(gameItr->first);
-    }
-
-    // 全てのウィンドウを破棄する
-    for (HWND hwnd : hwndArray) DestroyWindow(hwnd);
-    assert(0 == games.size());
-
-    // COMライブラリを閉じる
-    CoUninitialize();
 }
 
-int gd::Windows::create(
-    const std::string& windowTitle,
-    DWORD windowStyle, bool enableDoubleClick
-)
+// Executes the basic game loop.
+void gd::Window::Tick()
 {
-    // ウィンドウクラスの名前の重複を避けるために語尾に数字を追加する
-    std::string windowClass = windowTitle + std::to_string(createCount++);
-
-    // std::stringからLPCWSTRに変換する
-    using convert_t = std::codecvt_utf8<wchar_t>;
-    std::wstring_convert<convert_t, wchar_t> strconverter;
-    std::wstring wWindowTitle_ = strconverter.from_bytes(windowTitle);
-    std::wstring wWindowClass_ = strconverter.from_bytes(windowClass);
-    LPCWSTR wWindowTitle = wWindowTitle_.c_str();
-    LPCWSTR wWindowClass = wWindowClass_.c_str();
-
-	// Gameインスタンスを生成する
-    std::unique_ptr<Game> game = std::make_unique<Game>();
-
-    // ウィンドウクラスの登録とウィンドウを生成する
+    m_timer.Tick([&]()
     {
-        // POD型では空の初期化子リストは0に初期化される
-        WNDCLASSEXW wcex = {};
-        wcex.cbSize = sizeof(WNDCLASSEXW);
+        Update(m_timer);
+    });
 
-        // サイズが変わったとき，ウインドウ全体を再描画する
-        wcex.style |= CS_HREDRAW | CS_VREDRAW;
-
-        // ダブルクリックを有効化する
-        if (enableDoubleClick) wcex.style |= CS_DBLCLKS;
-
-        // 送られてくるウィンドウメッセージを処理するためのコールバック関数(ウィンドウプロシージャ)を指定する
-        wcex.lpfnWndProc = WndProc;
-
-        // インスタンスへのハンドルを指定する
-        wcex.hInstance = hInstance;
-
-        // アプリケーションのアイコンを指定する
-        wcex.hIcon = LoadIconW(nullptr, L"IDI_APPLICATION");
-        wcex.hIconSm = LoadIconW(nullptr, L"IDI_APPLICATION");
-
-        // ウィンドウのマウスカーソルを指定する
-        wcex.hCursor = LoadCursorW(nullptr, IDC_ARROW);
-
-        // 背景ブラシへのハンドルを指定する　(選択した値に+1する必要がある)
-        wcex.hbrBackground = reinterpret_cast<HBRUSH>(COLOR_WINDOW + 1);
-
-        // ウィンドウクラス名を指定する
-        wcex.lpszClassName = wWindowClass;
-
-        // ウィンドウクラスを登録する
-        if (!RegisterClassExW(&wcex)) { error(L"ウィンドウクラスの登録に失敗しました。"); return 1; }
-
-        // 生成するウィンドウサイズを取得する
-        int w, h;
-        game->GetDefaultSize(w, h);
-        RECT rc = { 0, 0, static_cast<LONG>(w), static_cast<LONG>(h) };
-
-        // ウィンドウのクライアント領域のサイズから、ウィンドウ全体の領域のサイズを求める
-        AdjustWindowRect(&rc, windowStyle, FALSE);
-
-        // ウィンドウを生成する
-        HWND hwnd = CreateWindowExW(
-            0, wcex.lpszClassName, wWindowTitle, windowStyle,
-            CW_USEDEFAULT, CW_USEDEFAULT, rc.right - rc.left, rc.bottom - rc.top, nullptr, nullptr, wcex.hInstance,
-            nullptr
-        );
-        if (!hwnd) { error(L"ウィンドウの生成に失敗しました。"); return 1; }
-
-        // ウィンドウの表示状態を設定する
-        ShowWindow(hwnd, nCmdShow);
-
-        // ウィンドウのGWLP_USERDATA属性にgameのポインタを設定する
-        // これはWndProcからgameへアクセスできるようにするためである
-        //SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(game.get()));
-        SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(&games));
-
-        // 生成したウィンドウのクライアント領域を取得する
-        GetClientRect(hwnd, &rc);
-
-        // gameを初期化する
-        game->Initialize(hwnd, rc.right - rc.left, rc.bottom - rc.top);
-
-        // gameをgamesに登録する
-        assert(0 == games.count(hwnd));
-        games.insert(std::make_pair(hwnd, std::move(game)));
-    }
-
-	return 0;
+    Render();
 }
 
-int gd::Windows::waitUntilExit()
+// Updates the world.
+void gd::Window::Update(DX::StepTimer const& timer)
 {
-    // POD型では空の初期化子リストは0に初期化される
-    MSG msg = {};
+    float elapsedTime = float(timer.GetElapsedSeconds());
 
-    // 全てのウィンドウが終了するまでループする
-    while (games.size() > 0)
+    // TODO: Add your game logic here.
+    elapsedTime;
+}
+
+// Draws the scene.
+void gd::Window::Render()
+{
+    // Don't try to render anything before the first Update.
+    if (m_timer.GetFrameCount() == 0)
     {
-        // ウィンドウメッセージが送られてきた場合はそれを処理する
-        if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
+        return;
+    }
+
+    Clear();
+
+    // TODO: Add your rendering code here.
+    graph.Line();
+
+    Present();
+}
+
+// Helper method to clear the back buffers.
+void gd::Window::Clear()
+{
+    // Clear the views.
+    m_d3dContext->ClearRenderTargetView(m_renderTargetView.Get(), Colors::CornflowerBlue);
+    m_d3dContext->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+
+    m_d3dContext->OMSetRenderTargets(1, m_renderTargetView.GetAddressOf(), m_depthStencilView.Get());
+
+    // Set the viewport.
+    CD3D11_VIEWPORT viewport(0.0f, 0.0f, static_cast<float>(m_outputWidth), static_cast<float>(m_outputHeight));
+    m_d3dContext->RSSetViewports(1, &viewport);
+}
+
+// Presents the back buffer contents to the screen.
+void gd::Window::Present()
+{
+    // The first argument instructs DXGI to block until VSync, putting the application
+    // to sleep until the next VSync. This ensures we don't waste any cycles rendering
+    // frames that will never be displayed to the screen.
+    HRESULT hr = m_swapChain->Present(1, 0);
+
+    // If the device was reset we must completely reinitialize the renderer.
+    if (hr == DXGI_ERROR_DEVICE_REMOVED || hr == DXGI_ERROR_DEVICE_RESET)
+    {
+        OnDeviceLost();
+    }
+    else
+    {
+        DX::ThrowIfFailed(hr);
+    }
+}
+
+// Message handlers
+void gd::Window::GetMessage(UINT message, WPARAM wParam, LPARAM lParam)
+{
+    switch (message)
+    {
+    case WM_PAINT:
+        if (s_in_sizemove)
         {
-            // WndProcにメッセージをディスパッチする
-            TranslateMessage(&msg);
-            DispatchMessage(&msg);
-
-            // WM_QUITが送られてきたら終了する
-            if (WM_QUIT == msg.message) break;
+            Tick();
         }
-        // ウィンドウを更新する
         else
         {
-            for (auto gameItr = games.begin(); gameItr != games.end(); ++gameItr)
+            PAINTSTRUCT ps;
+            (void)BeginPaint(m_window, &ps);
+            EndPaint(m_window, &ps);
+        }
+        break;
+
+    case WM_SIZE:
+        if (wParam == SIZE_MINIMIZED)
+        {
+            if (!s_minimized)
             {
-                gameItr->second->Tick();
+                s_minimized = true;
+                if (!s_in_suspend)
+                    OnSuspending();
+                s_in_suspend = true;
             }
         }
+        else if (s_minimized)
+        {
+            s_minimized = false;
+            if (s_in_suspend)
+                OnResuming();
+            s_in_suspend = false;
+        }
+        else if (!s_in_sizemove)
+        {
+            OnWindowSizeChanged(LOWORD(lParam), HIWORD(lParam));
+        }
+        break;
+
+    case WM_ENTERSIZEMOVE:
+        s_in_sizemove = true;
+        break;
+
+    case WM_EXITSIZEMOVE:
+        s_in_sizemove = false;
+
+        RECT rc;
+        GetClientRect(m_window, &rc);
+
+        OnWindowSizeChanged(rc.right - rc.left, rc.bottom - rc.top);
+        break;
+
+    case WM_GETMINMAXINFO:
+        if (lParam)
+        {
+            auto info = reinterpret_cast<MINMAXINFO*>(lParam);
+            info->ptMinTrackSize.x = 320;
+            info->ptMinTrackSize.y = 200;
+        }
+        break;
+
+    case WM_ACTIVATEAPP:
+        if (wParam)
+        {
+            OnActivated();
+        }
+        else
+        {
+            OnDeactivated();
+        }
+        break;
+
+    case WM_POWERBROADCAST:
+        switch (wParam)
+        {
+        case PBT_APMQUERYSUSPEND:
+            if (!s_in_suspend)
+                OnSuspending();
+            s_in_suspend = true;
+            return;
+
+        case PBT_APMRESUMESUSPEND:
+            if (!s_minimized)
+            {
+                if (s_in_suspend)
+                    OnResuming();
+                s_in_suspend = false;
+            }
+            return;
+        }
+        break;
     }
-
-    return 0;
 }
 
-void gd::Windows::exit()
+void gd::Window::OnActivated()
 {
-    // スレッドのメッセージキューにWM_QUITを送る
-    PostQuitMessage(0);
+    // TODO: Game is becoming active window.
 }
 
-void gd::Windows::error(const std::string& description)
+void gd::Window::OnDeactivated()
 {
-    // std::stringからLPCWSTRに変換する
-    using convert_t = std::codecvt_utf8<wchar_t>;
-    std::wstring_convert<convert_t, wchar_t> strconverter;
-    std::wstring wDescription_ = strconverter.from_bytes(description);
-    LPCWSTR wDescription = wDescription_.c_str();
-    error(wDescription);
+    // TODO: Game is becoming background window.
 }
 
-void gd::Windows::error(LPCWSTR description)
+void gd::Window::OnSuspending()
 {
-    // エラーダイアログを表示する
-    MessageBoxW(nullptr, description, L"error", MB_OK | MB_ICONERROR);
+    // TODO: Game is being power-suspended (or minimized).
 }
 
-LRESULT CALLBACK gd::Windows::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+void gd::Window::OnResuming()
 {
-    // GWLP_USERDATA属性に設定したgameのインスタンスを取得する
-    auto games = reinterpret_cast<Games*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
-    if ((nullptr == games) || (0 == games->count(hWnd)))
+    m_timer.ResetElapsedTime();
+
+    // TODO: Game is being power-resumed (or returning from minimize).
+}
+
+void gd::Window::OnWindowSizeChanged(int width, int height)
+{
+    m_outputWidth = std::max(width, 1);
+    m_outputHeight = std::max(height, 1);
+
+    CreateResources();
+
+    // TODO: Game window is being resized.
+}
+
+// Properties
+void gd::Window::GetDefaultSize(int& width, int& height) const noexcept
+{
+    // TODO: Change to desired default window size (note minimum size is 320x200).
+    width = 800;
+    height = 600;
+}
+
+// These are the resources that depend on the device.
+void gd::Window::CreateDevice()
+{
+    UINT creationFlags = 0;
+
+#ifdef _DEBUG
+    creationFlags |= D3D11_CREATE_DEVICE_DEBUG;
+#endif
+
+    static const D3D_FEATURE_LEVEL featureLevels[] =
     {
-        return DefWindowProc(hWnd, message, wParam, lParam);
-    }
-    std::unique_ptr<Game>& game = games->at(hWnd);
+        // TODO: Modify for supported Direct3D feature levels
+        D3D_FEATURE_LEVEL_11_1,
+        D3D_FEATURE_LEVEL_11_0
+    };
 
-    // 送られてきたウィンドウメッセージをgameにも送る
-    game->GetMessage(message, wParam, lParam);
+    // Create the DX11 API device object, and get a corresponding context.
+    ComPtr<ID3D11Device> device;
+    ComPtr<ID3D11DeviceContext> context;
+    DX::ThrowIfFailed(D3D11CreateDevice(
+        nullptr,                            // specify nullptr to use the default adapter
+        D3D_DRIVER_TYPE_HARDWARE,
+        nullptr,
+        creationFlags,
+        featureLevels,
+        _countof(featureLevels),
+        D3D11_SDK_VERSION,
+        device.ReleaseAndGetAddressOf(),    // returns the Direct3D device created
+        &m_featureLevel,                    // returns feature level of device created
+        context.ReleaseAndGetAddressOf()    // returns the device immediate context
+    ));
 
-    // WM_DESTROYが送られてきたらgamesからウィンドウハンドルを削除する
-    if (WM_DESTROY == message)
+#ifndef NDEBUG
+    ComPtr<ID3D11Debug> d3dDebug;
+    if (SUCCEEDED(device.As(&d3dDebug)))
     {
-        games->erase(hWnd);
+        ComPtr<ID3D11InfoQueue> d3dInfoQueue;
+        if (SUCCEEDED(d3dDebug.As(&d3dInfoQueue)))
+        {
+#ifdef _DEBUG
+            d3dInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_CORRUPTION, true);
+            d3dInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_ERROR, true);
+#endif
+            D3D11_MESSAGE_ID hide[] =
+            {
+                D3D11_MESSAGE_ID_SETPRIVATEDATA_CHANGINGPARAMS,
+                // TODO: Add more message IDs here as needed.
+            };
+            D3D11_INFO_QUEUE_FILTER filter = {};
+            filter.DenyList.NumIDs = _countof(hide);
+            filter.DenyList.pIDList = hide;
+            d3dInfoQueue->AddStorageFilterEntries(&filter);
+        }
+    }
+#endif
+
+    DX::ThrowIfFailed(device.As(&m_d3dDevice));
+    DX::ThrowIfFailed(context.As(&m_d3dContext));
+
+    // TODO: Initialize device dependent objects here (independent of window size).
+    graph.CreateDevice(m_d3dDevice.Get(), m_d3dContext.Get());
+}
+
+// Allocate all memory resources that change on a window SizeChanged event.
+void gd::Window::CreateResources()
+{
+    // Clear the previous window size specific context.
+    ID3D11RenderTargetView* nullViews[] = { nullptr };
+    m_d3dContext->OMSetRenderTargets(_countof(nullViews), nullViews, nullptr);
+    m_renderTargetView.Reset();
+    m_depthStencilView.Reset();
+    m_d3dContext->Flush();
+
+    const UINT backBufferWidth = static_cast<UINT>(m_outputWidth);
+    const UINT backBufferHeight = static_cast<UINT>(m_outputHeight);
+    const DXGI_FORMAT backBufferFormat = DXGI_FORMAT_B8G8R8A8_UNORM;
+    const DXGI_FORMAT depthBufferFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+    constexpr UINT backBufferCount = 2;
+
+    // If the swap chain already exists, resize it, otherwise create one.
+    if (m_swapChain)
+    {
+        HRESULT hr = m_swapChain->ResizeBuffers(backBufferCount, backBufferWidth, backBufferHeight, backBufferFormat, 0);
+
+        if (hr == DXGI_ERROR_DEVICE_REMOVED || hr == DXGI_ERROR_DEVICE_RESET)
+        {
+            // If the device was removed for any reason, a new device and swap chain will need to be created.
+            OnDeviceLost();
+
+            // Everything is set up now. Do not continue execution of this method. OnDeviceLost will reenter this method 
+            // and correctly set up the new device.
+            return;
+        }
+        else
+        {
+            DX::ThrowIfFailed(hr);
+        }
+    }
+    else
+    {
+        // First, retrieve the underlying DXGI Device from the D3D Device.
+        ComPtr<IDXGIDevice1> dxgiDevice;
+        DX::ThrowIfFailed(m_d3dDevice.As(&dxgiDevice));
+
+        // Identify the physical adapter (GPU or card) this device is running on.
+        ComPtr<IDXGIAdapter> dxgiAdapter;
+        DX::ThrowIfFailed(dxgiDevice->GetAdapter(dxgiAdapter.GetAddressOf()));
+
+        // And obtain the factory object that created it.
+        ComPtr<IDXGIFactory2> dxgiFactory;
+        DX::ThrowIfFailed(dxgiAdapter->GetParent(IID_PPV_ARGS(dxgiFactory.GetAddressOf())));
+
+        // Create a descriptor for the swap chain.
+        DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
+        swapChainDesc.Width = backBufferWidth;
+        swapChainDesc.Height = backBufferHeight;
+        swapChainDesc.Format = backBufferFormat;
+        swapChainDesc.SampleDesc.Count = 1;
+        swapChainDesc.SampleDesc.Quality = 0;
+        swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+        swapChainDesc.BufferCount = backBufferCount;
+
+        DXGI_SWAP_CHAIN_FULLSCREEN_DESC fsSwapChainDesc = {};
+        fsSwapChainDesc.Windowed = TRUE;
+
+        // Create a SwapChain from a Win32 window.
+        DX::ThrowIfFailed(dxgiFactory->CreateSwapChainForHwnd(
+            m_d3dDevice.Get(),
+            m_window,
+            &swapChainDesc,
+            &fsSwapChainDesc,
+            nullptr,
+            m_swapChain.ReleaseAndGetAddressOf()
+        ));
+
+        // This template does not support exclusive fullscreen mode and prevents DXGI from responding to the ALT+ENTER shortcut.
+        DX::ThrowIfFailed(dxgiFactory->MakeWindowAssociation(m_window, DXGI_MWA_NO_ALT_ENTER));
     }
 
-    // そのほかのメッセージはデフォルトの処理を行う
-    return DefWindowProc(hWnd, message, wParam, lParam);
+    // Obtain the backbuffer for this window which will be the final 3D rendertarget.
+    ComPtr<ID3D11Texture2D> backBuffer;
+    DX::ThrowIfFailed(m_swapChain->GetBuffer(0, IID_PPV_ARGS(backBuffer.GetAddressOf())));
+
+    // Create a view interface on the rendertarget to use on bind.
+    DX::ThrowIfFailed(m_d3dDevice->CreateRenderTargetView(backBuffer.Get(), nullptr, m_renderTargetView.ReleaseAndGetAddressOf()));
+
+    // Allocate a 2-D surface as the depth/stencil buffer and
+    // create a DepthStencil view on this surface to use on bind.
+    CD3D11_TEXTURE2D_DESC depthStencilDesc(depthBufferFormat, backBufferWidth, backBufferHeight, 1, 1, D3D11_BIND_DEPTH_STENCIL);
+
+    ComPtr<ID3D11Texture2D> depthStencil;
+    DX::ThrowIfFailed(m_d3dDevice->CreateTexture2D(&depthStencilDesc, nullptr, depthStencil.GetAddressOf()));
+
+    CD3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc(D3D11_DSV_DIMENSION_TEXTURE2D);
+    DX::ThrowIfFailed(m_d3dDevice->CreateDepthStencilView(depthStencil.Get(), &depthStencilViewDesc, m_depthStencilView.ReleaseAndGetAddressOf()));
+
+    // TODO: Initialize windows-size dependent objects here.
+    graph.CreateResources(backBufferWidth, backBufferHeight);
+}
+
+void gd::Window::OnDeviceLost()
+{
+    // TODO: Add Direct3D resource cleanup here.
+
+    m_depthStencilView.Reset();
+    m_renderTargetView.Reset();
+    m_swapChain.Reset();
+    m_d3dContext.Reset();
+    m_d3dDevice.Reset();
+
+    CreateDevice();
+
+    CreateResources();
 }
