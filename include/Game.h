@@ -29,10 +29,7 @@ public:
     void Tick();
 
     // Messages
-    void OnActivated();
-    void OnDeactivated();
-    void OnSuspending();
-    void OnResuming();
+    void GetMessage(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
     void OnWindowSizeChanged(int width, int height);
 
     // Properties

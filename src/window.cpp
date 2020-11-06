@@ -2,12 +2,11 @@
 #include "pch.h"
 #include "Game.h"
 
+#include <vector>
 #include <codecvt>
 #include <locale>
 
 using namespace DirectX;
-
-std::unique_ptr<Game> gd::Window::g_game;
 
 extern "C"
 {
@@ -15,39 +14,76 @@ extern "C"
     __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
 }
 
-int gd::Window::create(
-    HINSTANCE hInstance, int nCmdShow,
+gd::Windows::Windows(HINSTANCE hInstance, int nCmdShow) : hInstance(hInstance), nCmdShow(nCmdShow), createCount(0)
+{
+    // DirectXMathライブラリが使用可能かを確認する
+    if (!XMVerifyCPUSupport()) { error(L"このPCではDirectXMathが利用できません。"); }
+
+    // 現在のスレッドでCOMライブラリを初期化する
+    HRESULT hr = CoInitializeEx(nullptr, COINITBASE_MULTITHREADED);
+    if (FAILED(hr)) { error(L"COMライブラリの初期化に失敗しました。"); }
+}
+
+gd::Windows::~Windows()
+{
+    /*
+    次のようなプログラムはイテレータの破壊を起こします。
+    
+    for (auto gameItr = games.begin(); gameItr != games.end(); ++gameItr)
+    {
+        DestroyWindow(gameItr->first);
+    }
+    
+    これはDestroyWindowの中で処理がWinProcにディスパッチされ、その中でgames.eraseが実行されるためです。
+    これを避けるため、ウィンドウハンドルの配列を作成してからウィンドウを破棄します。
+    */
+
+    // 全てのウィンドウハンドルを取得する
+    std::vector<HWND> hwndArray;
+    hwndArray.reserve(games.size());
+    for (auto gameItr = games.begin(); gameItr != games.end(); ++gameItr)
+    {
+        hwndArray.push_back(gameItr->first);
+    }
+
+    // 全てのウィンドウを破棄する
+    for (HWND hwnd : hwndArray) DestroyWindow(hwnd);
+    assert(0 == games.size());
+
+    // COMライブラリを閉じる
+    CoUninitialize();
+}
+
+int gd::Windows::create(
     const int32_t width, const int32_t height, const std::string& windowTitle,
     DWORD windowStyle, bool enableDoubleClick
 )
 {
-	// DirectXMathライブラリが使用可能かを確認する
-	if (!XMVerifyCPUSupport()) { error(L"このPCではDirectXMathが利用できません。"); return 1; }
+    // ウィンドウクラスの名前の重複を避けるために語尾に数字を追加する
+    std::string windowClass = windowTitle + std::to_string(createCount++);
 
-	// 現在のスレッドでCOMライブラリを初期化する
-	HRESULT hr = CoInitializeEx(nullptr, COINITBASE_MULTITHREADED);
-	if (FAILED(hr)) { error(L"COMライブラリの初期化に失敗しました。"); return 1; }
-
-	// Gameインスタンスを生成する
-	g_game = std::make_unique<Game>();
-
-	// ウィンドウタイトルをstd::stringからLPCWSTRに変換する
-	using convert_t = std::codecvt_utf8<wchar_t>;
-	std::wstring_convert<convert_t, wchar_t> strconverter;
-	std::wstring wWindowTitle_ = strconverter.from_bytes(windowTitle);
-	std::wstring wWindowClass_ = strconverter.from_bytes(windowTitle + " class");
+    // std::stringからLPCWSTRに変換する
+    using convert_t = std::codecvt_utf8<wchar_t>;
+    std::wstring_convert<convert_t, wchar_t> strconverter;
+    std::wstring wWindowTitle_ = strconverter.from_bytes(windowTitle);
+    std::wstring wWindowClass_ = strconverter.from_bytes(windowClass);
     LPCWSTR wWindowTitle = wWindowTitle_.c_str();
     LPCWSTR wWindowClass = wWindowClass_.c_str();
 
+	// Gameインスタンスを生成する
+    std::unique_ptr<Game> game = std::make_unique<Game>();
+
     // ウィンドウクラスの登録とウィンドウを生成する
     {
+        // POD型では空の初期化子リストは0に初期化される
         WNDCLASSEXW wcex = {};
         wcex.cbSize = sizeof(WNDCLASSEXW);
 
-        // CS_HREDRAW: 横サイズが変わったとき，ウインドウ全体を再描画する
-        // CS_VREDRAW: 縦サイズが変わったとき，ウインドウ全体を再描画する
-        // CS_DBLCLKS: ダブルクリックを有効化する
-        wcex.style = CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS;
+        // サイズが変わったとき，ウインドウ全体を再描画する
+        wcex.style |= CS_HREDRAW | CS_VREDRAW;
+
+        // ダブルクリックを有効化する
+        if (enableDoubleClick) wcex.style |= CS_DBLCLKS;
 
         // 送られてくるウィンドウメッセージを処理するためのコールバック関数(ウィンドウプロシージャ)を指定する
         wcex.lpfnWndProc = WndProc;
@@ -69,11 +105,11 @@ int gd::Window::create(
         wcex.lpszClassName = wWindowClass;
 
         // ウィンドウクラスを登録する
-        RegisterClassExW(&wcex);
+        if (!RegisterClassExW(&wcex)) { error(L"ウィンドウクラスの登録に失敗しました。"); return 1; }
 
         // 生成するウィンドウサイズを取得する
         int w, h;
-        g_game->GetDefaultSize(w, h);
+        game->GetDefaultSize(w, h);
         RECT rc = { 0, 0, static_cast<LONG>(w), static_cast<LONG>(h) };
 
         // ウィンドウのクライアント領域のサイズから、ウィンドウ全体の領域のサイズを求める
@@ -90,208 +126,97 @@ int gd::Window::create(
         // ウィンドウの表示状態を設定する
         ShowWindow(hwnd, nCmdShow);
 
-        // ウィンドウのGWLP_USERDATA属性にg_gameのポインタを設定する
-        // これはWndProcからg_gameへアクセスできるようにするためである
-        SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(g_game.get()));
+        // ウィンドウのGWLP_USERDATA属性にgameのポインタを設定する
+        // これはWndProcからgameへアクセスできるようにするためである
+        //SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(game.get()));
+        SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(&games));
 
         // 生成したウィンドウのクライアント領域を取得する
         GetClientRect(hwnd, &rc);
 
-        // g_gameを初期化する
-        g_game->Initialize(hwnd, rc.right - rc.left, rc.bottom - rc.top);
+        // gameを初期化する
+        game->Initialize(hwnd, rc.right - rc.left, rc.bottom - rc.top);
+
+        // gameをgamesに登録する
+        assert(0 == games.count(hwnd));
+        games.insert(std::make_pair(hwnd, std::move(game)));
     }
 
 	return 0;
 }
 
-int gd::Window::waitUntilExit()
+int gd::Windows::waitUntilExit()
 {
     // POD型では空の初期化子リストは0に初期化される
     MSG msg = {};
 
-    // 終了するまで無限ループする
-    while (WM_QUIT != msg.message)
+    // 全てのウィンドウが終了するまでループする
+    while (games.size() > 0)
     {
         // ウィンドウメッセージが送られてきた場合はそれを処理する
         if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
         {
+            // WndProcにメッセージをディスパッチする
             TranslateMessage(&msg);
             DispatchMessage(&msg);
+
+            // WM_QUITが送られてきたら終了する
+            if (WM_QUIT != msg.message) break;
         }
         // ウィンドウを更新する
         else
         {
-            g_game->Tick();
+            for (auto gameItr = games.begin(); gameItr != games.end(); ++gameItr)
+            {
+                gameItr->second->Tick();
+            }
         }
     }
 
-    // wWinMain関数が返すべき値を返す
-    return static_cast<int>(msg.wParam);
+    return 0;
 }
 
-void gd::Window::exit()
+void gd::Windows::exit()
 {
     // スレッドのメッセージキューにWM_QUITを送る
     PostQuitMessage(0);
 }
 
-void gd::Window::destroy()
+void gd::Windows::error(const std::string& description)
 {
-	// Gameインスタンスをリセットする
-	g_game.reset();
-
-	// 現在のスレッドでCOMライブラリを閉じる
-	CoUninitialize();
+    // std::stringからLPCWSTRに変換する
+    using convert_t = std::codecvt_utf8<wchar_t>;
+    std::wstring_convert<convert_t, wchar_t> strconverter;
+    std::wstring wDescription_ = strconverter.from_bytes(description);
+    LPCWSTR wDescription = wDescription_.c_str();
+    error(wDescription);
 }
 
-LRESULT CALLBACK gd::Window::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+void gd::Windows::error(LPCWSTR description)
 {
-    static bool s_in_sizemove = false;
-    static bool s_in_suspend = false;
-    static bool s_minimized = false;
-    static bool s_fullscreen = false;
-    // TODO: Set s_fullscreen to true if defaulting to fullscreen.
+    // エラーダイアログを表示する
+    MessageBoxW(nullptr, description, L"error", MB_OK | MB_ICONERROR);
+}
 
-    auto game = reinterpret_cast<Game*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
-
-    switch (message)
+LRESULT CALLBACK gd::Windows::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    // GWLP_USERDATA属性に設定したgameのインスタンスを取得する
+    auto games = reinterpret_cast<Games*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
+    if ((nullptr == games) || (0 == games->count(hWnd)))
     {
-    case WM_PAINT:
-        if (s_in_sizemove && game)
-        {
-            game->Tick();
-        }
-        else
-        {
-            PAINTSTRUCT ps;
-            (void)BeginPaint(hWnd, &ps);
-            EndPaint(hWnd, &ps);
-        }
-        break;
+        return DefWindowProc(hWnd, message, wParam, lParam);
+    }
+    std::unique_ptr<Game>& game = games->at(hWnd);
 
-    case WM_SIZE:
-        if (wParam == SIZE_MINIMIZED)
-        {
-            if (!s_minimized)
-            {
-                s_minimized = true;
-                if (!s_in_suspend && game)
-                    game->OnSuspending();
-                s_in_suspend = true;
-            }
-        }
-        else if (s_minimized)
-        {
-            s_minimized = false;
-            if (s_in_suspend && game)
-                game->OnResuming();
-            s_in_suspend = false;
-        }
-        else if (!s_in_sizemove && game)
-        {
-            game->OnWindowSizeChanged(LOWORD(lParam), HIWORD(lParam));
-        }
-        break;
+    // 送られてきたウィンドウメッセージをgameにも送る
+    game->GetMessage(hWnd, message, wParam, lParam);
 
-    case WM_ENTERSIZEMOVE:
-        s_in_sizemove = true;
-        break;
-
-    case WM_EXITSIZEMOVE:
-        s_in_sizemove = false;
-        if (game)
-        {
-            RECT rc;
-            GetClientRect(hWnd, &rc);
-
-            game->OnWindowSizeChanged(rc.right - rc.left, rc.bottom - rc.top);
-        }
-        break;
-
-    case WM_GETMINMAXINFO:
-        if (lParam)
-        {
-            auto info = reinterpret_cast<MINMAXINFO*>(lParam);
-            info->ptMinTrackSize.x = 320;
-            info->ptMinTrackSize.y = 200;
-        }
-        break;
-
-    case WM_ACTIVATEAPP:
-        if (game)
-        {
-            if (wParam)
-            {
-                game->OnActivated();
-            }
-            else
-            {
-                game->OnDeactivated();
-            }
-        }
-        break;
-
-    case WM_POWERBROADCAST:
-        switch (wParam)
-        {
-        case PBT_APMQUERYSUSPEND:
-            if (!s_in_suspend && game)
-                game->OnSuspending();
-            s_in_suspend = true;
-            return TRUE;
-
-        case PBT_APMRESUMESUSPEND:
-            if (!s_minimized)
-            {
-                if (s_in_suspend && game)
-                    game->OnResuming();
-                s_in_suspend = false;
-            }
-            return TRUE;
-        }
-        break;
-
-    case WM_DESTROY:
-        PostQuitMessage(0);
-        break;
-
-    case WM_SYSKEYDOWN:
-        if (wParam == VK_RETURN && (lParam & 0x60000000) == 0x20000000)
-        {
-            // Implements the classic ALT+ENTER fullscreen toggle
-            if (s_fullscreen)
-            {
-                SetWindowLongPtr(hWnd, GWL_STYLE, WS_OVERLAPPEDWINDOW);
-                SetWindowLongPtr(hWnd, GWL_EXSTYLE, 0);
-
-                int width = 800;
-                int height = 600;
-                if (game)
-                    game->GetDefaultSize(width, height);
-
-                ShowWindow(hWnd, SW_SHOWNORMAL);
-
-                SetWindowPos(hWnd, HWND_TOP, 0, 0, width, height, SWP_NOMOVE | SWP_NOZORDER | SWP_FRAMECHANGED);
-            }
-            else
-            {
-                SetWindowLongPtr(hWnd, GWL_STYLE, 0);
-                SetWindowLongPtr(hWnd, GWL_EXSTYLE, WS_EX_TOPMOST);
-
-                SetWindowPos(hWnd, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
-
-                ShowWindow(hWnd, SW_SHOWMAXIMIZED);
-            }
-
-            s_fullscreen = !s_fullscreen;
-        }
-        break;
-
-    case WM_MENUCHAR:
-        // A menu is active and the user presses a key that does not correspond
-        // to any mnemonic or accelerator key. Ignore so we don't produce an error beep.
-        return MAKELRESULT(0, MNC_CLOSE);
+    // WM_DESTROYが送られてきたらgamesからウィンドウハンドルを削除する
+    if (WM_DESTROY == message)
+    {
+        games->erase(hWnd);
     }
 
+    // そのほかのメッセージはデフォルトの処理を行う
     return DefWindowProc(hWnd, message, wParam, lParam);
 }

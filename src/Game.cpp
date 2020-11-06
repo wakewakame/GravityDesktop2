@@ -108,26 +108,9 @@ void Game::Present()
 }
 
 // Message handlers
-void Game::OnActivated()
+void Game::GetMessage(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    // TODO: Game is becoming active window.
-}
 
-void Game::OnDeactivated()
-{
-    // TODO: Game is becoming background window.
-}
-
-void Game::OnSuspending()
-{
-    // TODO: Game is being power-suspended (or minimized).
-}
-
-void Game::OnResuming()
-{
-    m_timer.ResetElapsedTime();
-
-    // TODO: Game is being power-resumed (or returning from minimize).
 }
 
 void Game::OnWindowSizeChanged(int width, int height)

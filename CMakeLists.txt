@@ -30,7 +30,7 @@ add_executable(GravityDesktop2 WIN32
 target_include_directories(GravityDesktop2 PRIVATE ${PROJECT_SOURCE_DIR}/include)
 
 # プリコンパイル済みヘッダを指定する
-target_precompile_headers(GravityDesktop2 PRIVATE pch.h)
+target_precompile_headers(GravityDesktop2 PRIVATE ${PROJECT_SOURCE_DIR}/include/pch.h)
 
 # GravityDesktop2 に必要なlibファイルを追加する
 target_link_libraries(GravityDesktop2 PRIVATE

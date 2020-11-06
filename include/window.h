@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <map>
 #include <stdint.h>
 #include <memory>
 
@@ -31,31 +32,29 @@ namespace gd
 
 	/**
 	 * ウィンドウを生成するための関数をまとめたクラスです。
-	 * このクラスではウィンドウを2つ以上同時に生成できません。
 	 */
-	class Window
+	class Windows
 	{
-	private:
-		static void error(LPCWSTR description) { MessageBoxW(nullptr, description, L"error", MB_OK | MB_ICONERROR); }
-
-		static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
-
-		static std::unique_ptr<Game> g_game;
-
 	public:
+		/**
+		 * コンストラクタ
+		 * @param hInstance 通常はwWinMainの引数に渡される値を使用する
+		 * @param nCmdShow 通常はwWinMainの引数に渡される値を使用する
+		 */
+		Windows(HINSTANCE hInstance, int nCmdShow);
+
+		virtual ~Windows();
+
 		/**
 		 * ウィンドウを生成します。
 		 * ウィンドウが閉じられた後は必ずdestroy()を実行してください。
-		 * @param hInstance 通常はwWinMainの引数に渡される値を使用する
-		 * @param nCmdShow 通常はwWinMainの引数に渡される値を使用する
 		 * @param width, height ウィンドウのサイズを指定する
 		 * @param windowTitle ウィンドウのタイトルバーに表示される文字列を指定する
 		 * @param windowStyle WinUser.hで定義されているWS_から始まる定数を指定する
 		 * @param enableDoubleClick falseを指定するとダブルクリックが単なる2回分のクリックとして扱われる
 		 * @return 成功すると0が返されます。失敗すると1以上の値が返されます。
 		 */
-		static int create(
-			HINSTANCE hInstance, int nCmdShow,
+		int create(
 			const int32_t width = 640, const int32_t height = 480, const std::string& windowTitle = "window",
 			DWORD windowStyle = WS_POPUPWINDOW, bool enableDoubleClick = true
 		);
@@ -64,16 +63,31 @@ namespace gd
 		 * 描画するためにループ処理を行います。
 		 * ウィンドウが閉じられるまで、この関数が返ることはありません。
 		 */
-		static int waitUntilExit();
+		int waitUntilExit();
 
 		/**
-		 * ウィンドウを終了させます。
+		 * 全てのウィンドウを終了させます。
 		 */
-		static void exit();
+		void exit();
 
 		/**
-		 * ウィンドウの生成に用いたメモリなどを破棄します。
+		 * エラー用のダイアログを表示します。
+		 * @param description エラーの説明文
 		 */
-		static void destroy();
+		static void error(const std::string& description);
+
+	private:
+		HINSTANCE hInstance;
+
+		int nCmdShow;
+
+		size_t createCount;
+
+		using Games = std::map<HWND, std::unique_ptr<Game>>;
+		Games games;
+
+		static void error(LPCWSTR description);
+
+		static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 	};
 }

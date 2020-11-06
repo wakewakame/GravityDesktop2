@@ -4,12 +4,15 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 {
     int ret;
 
-    ret = gd::Window::create(hInstance, nCmdShow, 640, 480, "hoge", WS_OVERLAPPEDWINDOW, true);
+    gd::Windows windows{ hInstance, nCmdShow };
+
+    ret = windows.create(640, 480, "hoge", WS_OVERLAPPEDWINDOW, true);
     if (ret) return 1;
 
-    ret = gd::Window::waitUntilExit();
+    ret = windows.create(640, 480, "hoge", WS_OVERLAPPEDWINDOW, true);
+    if (ret) return 1;
 
-    gd::Window::destroy();
+    ret = windows.waitUntilExit();
 
     return ret;
 }

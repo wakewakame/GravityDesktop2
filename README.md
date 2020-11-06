@@ -45,7 +45,7 @@ cmake ..
 | lib/                       | 依存ライブラリがここに格納されます。 |
 | lib/hook/                  | 他のウィンドウのマウスやキーボードのイベントをフックするライブラリです。 |
 | lib/DirectXTK/             | 描画ライブラリです。 |
-| lib/directx-vs-templates/  | DirectXTKの開発環境の雛形がまとまっています。 |
-| lib/Box2D/                 | 二次元の物理演算ライブラリです。 |
+| lib/directx-vs-templates/  | DirectXの開発環境の雛形がまとまっています。 |
+| lib/box2d/                 | 二次元の物理演算ライブラリです。 |
 | examples/                  | サンプルプログラムがまとまっています。 |
 | CMakeLists.txt             | CMakeLists.txtです。CMakeで環境構築するので、それに使います。 |
