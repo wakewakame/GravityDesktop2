@@ -47,16 +47,14 @@ namespace gd
 
 		/**
 		 * ウィンドウを生成します。
-		 * ウィンドウが閉じられた後は必ずdestroy()を実行してください。
-		 * @param width, height ウィンドウのサイズを指定する
 		 * @param windowTitle ウィンドウのタイトルバーに表示される文字列を指定する
 		 * @param windowStyle WinUser.hで定義されているWS_から始まる定数を指定する
 		 * @param enableDoubleClick falseを指定するとダブルクリックが単なる2回分のクリックとして扱われる
-		 * @return 成功すると0が返されます。失敗すると1以上の値が返されます。
+		 * @return 成功すると0が返されます。失敗すると1以上の値が返される
 		 */
 		int create(
-			const int32_t width = 640, const int32_t height = 480, const std::string& windowTitle = "window",
-			DWORD windowStyle = WS_POPUPWINDOW, bool enableDoubleClick = true
+			const std::string& windowTitle = "window",
+			DWORD windowStyle = WS_OVERLAPPEDWINDOW, bool enableDoubleClick = true
 		);
 
 		/**
@@ -81,7 +79,7 @@ namespace gd
 
 		int nCmdShow;
 
-		size_t createCount;
+		static size_t createCount;
 
 		using Games = std::map<HWND, std::unique_ptr<Game>>;
 		Games games;

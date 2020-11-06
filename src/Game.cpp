@@ -5,8 +5,6 @@
 #include "pch.h"
 #include "Game.h"
 
-extern void ExitGame() noexcept;
-
 using namespace DirectX;
 
 using Microsoft::WRL::ComPtr;
@@ -15,7 +13,7 @@ Game::Game() noexcept :
     m_window(nullptr),
     m_outputWidth(800),
     m_outputHeight(600),
-    m_featureLevel(D3D_FEATURE_LEVEL_9_1)
+    m_featureLevel(D3D_FEATURE_LEVEL_11_0)
 {
 }
 
@@ -71,6 +69,7 @@ void Game::Render()
 
     // TODO: Add your rendering code here.
 
+
     Present();
 }
 
@@ -78,7 +77,7 @@ void Game::Render()
 void Game::Clear()
 {
     // Clear the views.
-    m_d3dContext->ClearRenderTargetView(m_renderTargetView.Get(), Colors::CornflowerBlue);
+    m_d3dContext->ClearRenderTargetView(m_renderTargetView.Get(), Colors::White);
     m_d3dContext->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
     m_d3dContext->OMSetRenderTargets(1, m_renderTargetView.GetAddressOf(), m_depthStencilView.Get());

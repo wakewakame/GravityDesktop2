@@ -6,10 +6,10 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 
     gd::Windows windows{ hInstance, nCmdShow };
 
-    ret = windows.create(640, 480, "hoge", WS_OVERLAPPEDWINDOW, true);
+    ret = windows.create("hoge");
     if (ret) return 1;
 
-    ret = windows.create(640, 480, "hoge", WS_OVERLAPPEDWINDOW, true);
+    ret = windows.create("hoge");
     if (ret) return 1;
 
     ret = windows.waitUntilExit();

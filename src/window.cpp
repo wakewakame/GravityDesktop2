@@ -14,7 +14,9 @@ extern "C"
     __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
 }
 
-gd::Windows::Windows(HINSTANCE hInstance, int nCmdShow) : hInstance(hInstance), nCmdShow(nCmdShow), createCount(0)
+size_t gd::Windows::createCount = 0;
+
+gd::Windows::Windows(HINSTANCE hInstance, int nCmdShow) : hInstance(hInstance), nCmdShow(nCmdShow)
 {
     // DirectXMathライブラリが使用可能かを確認する
     if (!XMVerifyCPUSupport()) { error(L"このPCではDirectXMathが利用できません。"); }
@@ -55,7 +57,7 @@ gd::Windows::~Windows()
 }
 
 int gd::Windows::create(
-    const int32_t width, const int32_t height, const std::string& windowTitle,
+    const std::string& windowTitle,
     DWORD windowStyle, bool enableDoubleClick
 )
 {
@@ -161,7 +163,7 @@ int gd::Windows::waitUntilExit()
             DispatchMessage(&msg);
 
             // WM_QUITが送られてきたら終了する
-            if (WM_QUIT != msg.message) break;
+            if (WM_QUIT == msg.message) break;
         }
         // ウィンドウを更新する
         else
