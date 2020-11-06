@@ -35,6 +35,10 @@ target_precompile_headers(GravityDesktop2 PRIVATE ${PROJECT_SOURCE_DIR}/include/
 # GravityDesktop2 に必要なlibファイルを追加する
 target_link_libraries(GravityDesktop2 PRIVATE
 
+	DirectXTK
+	box2d
+	hook
+
     d3d11.lib dxgi.lib dxguid.lib uuid.lib
     kernel32.lib user32.lib
     comdlg32.lib advapi32.lib shell32.lib

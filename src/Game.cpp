@@ -5,6 +5,8 @@
 #include "pch.h"
 #include "Game.h"
 
+extern void ExitGame() noexcept;
+
 using namespace DirectX;
 
 using Microsoft::WRL::ComPtr;
@@ -13,7 +15,7 @@ Game::Game() noexcept :
     m_window(nullptr),
     m_outputWidth(800),
     m_outputHeight(600),
-    m_featureLevel(D3D_FEATURE_LEVEL_11_0)
+    m_featureLevel(D3D_FEATURE_LEVEL_9_1)
 {
 }
 
@@ -69,7 +71,6 @@ void Game::Render()
 
     // TODO: Add your rendering code here.
 
-
     Present();
 }
 
@@ -77,7 +78,7 @@ void Game::Render()
 void Game::Clear()
 {
     // Clear the views.
-    m_d3dContext->ClearRenderTargetView(m_renderTargetView.Get(), Colors::White);
+    m_d3dContext->ClearRenderTargetView(m_renderTargetView.Get(), Colors::CornflowerBlue);
     m_d3dContext->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
     m_d3dContext->OMSetRenderTargets(1, m_renderTargetView.GetAddressOf(), m_depthStencilView.Get());
@@ -107,9 +108,122 @@ void Game::Present()
 }
 
 // Message handlers
-void Game::GetMessage(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+void Game::GetMessage(UINT message, WPARAM wParam, LPARAM lParam)
 {
+    switch (message)
+    {
+    case WM_PAINT:
+        if (s_in_sizemove)
+        {
+            Tick();
+        }
+        else
+        {
+            PAINTSTRUCT ps;
+            (void)BeginPaint(m_window, &ps);
+            EndPaint(m_window, &ps);
+        }
+        break;
 
+    case WM_SIZE:
+        if (wParam == SIZE_MINIMIZED)
+        {
+            if (!s_minimized)
+            {
+                s_minimized = true;
+                if (!s_in_suspend)
+                    OnSuspending();
+                s_in_suspend = true;
+            }
+        }
+        else if (s_minimized)
+        {
+            s_minimized = false;
+            if (s_in_suspend)
+                OnResuming();
+            s_in_suspend = false;
+        }
+        else if (!s_in_sizemove)
+        {
+            OnWindowSizeChanged(LOWORD(lParam), HIWORD(lParam));
+        }
+        break;
+
+    case WM_ENTERSIZEMOVE:
+        s_in_sizemove = true;
+        break;
+
+    case WM_EXITSIZEMOVE:
+        s_in_sizemove = false;
+
+        RECT rc;
+        GetClientRect(m_window, &rc);
+
+        OnWindowSizeChanged(rc.right - rc.left, rc.bottom - rc.top);
+        break;
+
+    case WM_GETMINMAXINFO:
+        if (lParam)
+        {
+            auto info = reinterpret_cast<MINMAXINFO*>(lParam);
+            info->ptMinTrackSize.x = 320;
+            info->ptMinTrackSize.y = 200;
+        }
+        break;
+
+    case WM_ACTIVATEAPP:
+        if (wParam)
+        {
+            OnActivated();
+        }
+        else
+        {
+            OnDeactivated();
+        }
+        break;
+
+    case WM_POWERBROADCAST:
+        switch (wParam)
+        {
+        case PBT_APMQUERYSUSPEND:
+            if (!s_in_suspend)
+                OnSuspending();
+            s_in_suspend = true;
+            return;
+
+        case PBT_APMRESUMESUSPEND:
+            if (!s_minimized)
+            {
+                if (s_in_suspend)
+                    OnResuming();
+                s_in_suspend = false;
+            }
+            return;
+        }
+        break;
+    }
+}
+
+void Game::OnActivated()
+{
+    // TODO: Game is becoming active window.
+}
+
+void Game::OnDeactivated()
+{
+    // TODO: Game is becoming background window.
+}
+
+void Game::OnSuspending()
+{
+    // TODO: Game is being power-suspended (or minimized).
+}
+
+void Game::OnResuming()
+{
+    m_timer.ResetElapsedTime();
+
+    // TODO: Game is being power-resumed (or returning from minimize).
 }
 
 void Game::OnWindowSizeChanged(int width, int height)
@@ -139,7 +253,7 @@ void Game::CreateDevice()
     creationFlags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
 
-    static const D3D_FEATURE_LEVEL featureLevels [] =
+    static const D3D_FEATURE_LEVEL featureLevels[] =
     {
         // TODO: Modify for supported Direct3D feature levels
         D3D_FEATURE_LEVEL_11_1,
@@ -165,7 +279,7 @@ void Game::CreateDevice()
         device.ReleaseAndGetAddressOf(),    // returns the Direct3D device created
         &m_featureLevel,                    // returns feature level of device created
         context.ReleaseAndGetAddressOf()    // returns the device immediate context
-        ));
+    ));
 
 #ifndef NDEBUG
     ComPtr<ID3D11Debug> d3dDebug;
@@ -178,7 +292,7 @@ void Game::CreateDevice()
             d3dInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_CORRUPTION, true);
             d3dInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_ERROR, true);
 #endif
-            D3D11_MESSAGE_ID hide [] =
+            D3D11_MESSAGE_ID hide[] =
             {
                 D3D11_MESSAGE_ID_SETPRIVATEDATA_CHANGINGPARAMS,
                 // TODO: Add more message IDs here as needed.
@@ -201,7 +315,7 @@ void Game::CreateDevice()
 void Game::CreateResources()
 {
     // Clear the previous window size specific context.
-    ID3D11RenderTargetView* nullViews [] = { nullptr };
+    ID3D11RenderTargetView* nullViews[] = { nullptr };
     m_d3dContext->OMSetRenderTargets(_countof(nullViews), nullViews, nullptr);
     m_renderTargetView.Reset();
     m_depthStencilView.Reset();
@@ -267,7 +381,7 @@ void Game::CreateResources()
             &fsSwapChainDesc,
             nullptr,
             m_swapChain.ReleaseAndGetAddressOf()
-            ));
+        ));
 
         // This template does not support exclusive fullscreen mode and prevents DXGI from responding to the ALT+ENTER shortcut.
         DX::ThrowIfFailed(dxgiFactory->MakeWindowAssociation(m_window, DXGI_MWA_NO_ALT_ENTER));

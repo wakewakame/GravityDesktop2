@@ -211,7 +211,7 @@ LRESULT CALLBACK gd::Windows::WndProc(HWND hWnd, UINT message, WPARAM wParam, LP
     std::unique_ptr<Game>& game = games->at(hWnd);
 
     // 送られてきたウィンドウメッセージをgameにも送る
-    game->GetMessage(hWnd, message, wParam, lParam);
+    game->GetMessage(message, wParam, lParam);
 
     // WM_DESTROYが送られてきたらgamesからウィンドウハンドルを削除する
     if (WM_DESTROY == message)

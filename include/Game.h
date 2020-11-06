@@ -29,11 +29,15 @@ public:
     void Tick();
 
     // Messages
-    void GetMessage(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+    void GetMessage(UINT message, WPARAM wParam, LPARAM lParam);
+    void OnActivated();
+    void OnDeactivated();
+    void OnSuspending();
+    void OnResuming();
     void OnWindowSizeChanged(int width, int height);
 
     // Properties
-    void GetDefaultSize( int& width, int& height ) const noexcept;
+    void GetDefaultSize(int& width, int& height) const noexcept;
 
 private:
 
@@ -63,4 +67,8 @@ private:
 
     // Rendering loop timer.
     DX::StepTimer                                   m_timer;
+
+    bool s_in_sizemove = false;
+    bool s_in_suspend  = false;
+    bool s_minimized   = false;
 };
