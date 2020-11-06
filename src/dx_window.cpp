@@ -1,4 +1,4 @@
-#include "window.h"
+#include "dx_window.h"
 
 using namespace DirectX;
 

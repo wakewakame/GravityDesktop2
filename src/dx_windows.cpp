@@ -1,4 +1,4 @@
-#include "window.h"
+#include "dx_windows.h"
 
 using namespace DirectX;
 
@@ -19,12 +19,12 @@ gd::Windows::~Windows()
     /*
     次のようなプログラムはイテレータの破壊を起こします。
     
-    for (auto gameItr = games.begin(); gameItr != games.end(); ++gameItr)
+    for (auto windowItr = windows.begin(); windowItr != windows.end(); ++windowItr)
     {
-        DestroyWindow(gameItr->first);
+        DestroyWindow(windowItr->first);
     }
     
-    これはDestroyWindowの中で処理がWinProcにディスパッチされ、その中でgames.eraseが実行されるためです。
+    これはDestroyWindowの中で処理がWinProcにディスパッチされ、その中でwindows.eraseが実行されるためです。
     これを避けるため、ウィンドウハンドルの配列を作成してからウィンドウを破棄します。
     */
 
@@ -60,7 +60,7 @@ int gd::Windows::create(
     LPCWSTR wWindowTitle = wWindowTitle_.c_str();
     LPCWSTR wWindowClass = wWindowClass_.c_str();
 
-	// Gameインスタンスを生成する
+	// DxWindowインスタンスを生成する
     std::unique_ptr<Window> window = std::make_unique<Window>();
 
     // ウィンドウクラスの登録とウィンドウを生成する
@@ -116,18 +116,17 @@ int gd::Windows::create(
         // ウィンドウの表示状態を設定する
         ShowWindow(hwnd, nCmdShow);
 
-        // ウィンドウのGWLP_USERDATA属性にgameのポインタを設定する
-        // これはWndProcからgameへアクセスできるようにするためである
-        //SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(game.get()));
+        // ウィンドウのGWLP_USERDATA属性にwindowsのポインタを設定する
+        // これはWndProcからwindowsへアクセスできるようにするためである
         SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(&windows));
 
         // 生成したウィンドウのクライアント領域を取得する
         GetClientRect(hwnd, &rc);
 
-        // gameを初期化する
+        // windowを初期化する
         window->Initialize(hwnd, rc.right - rc.left, rc.bottom - rc.top);
 
-        // gameをgamesに登録する
+        // windowをwindowsに登録する
         assert(0 == windows.count(hwnd));
         windows.insert(std::make_pair(hwnd, std::move(window)));
     }
@@ -191,20 +190,20 @@ void gd::Windows::error(LPCWSTR description)
 LRESULT CALLBACK gd::Windows::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     // GWLP_USERDATA属性に設定したgameのインスタンスを取得する
-    auto games = reinterpret_cast<std::map<HWND, std::unique_ptr<Window>>*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
-    if ((nullptr == games) || (0 == games->count(hWnd)))
+    auto windows = reinterpret_cast<std::map<HWND, std::unique_ptr<Window>>*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
+    if ((nullptr == windows) || (0 == windows->count(hWnd)))
     {
         return DefWindowProc(hWnd, message, wParam, lParam);
     }
-    std::unique_ptr<Window>& game = games->at(hWnd);
+    std::unique_ptr<Window>& window = windows->at(hWnd);
 
     // 送られてきたウィンドウメッセージをgameにも送る
-    game->GetMessage(message, wParam, lParam);
+    window->GetMessage(message, wParam, lParam);
 
     // WM_DESTROYが送られてきたらgamesからウィンドウハンドルを削除する
     if (WM_DESTROY == message)
     {
-        games->erase(hWnd);
+        windows->erase(hWnd);
     }
 
     // そのほかのメッセージはデフォルトの処理を行う
