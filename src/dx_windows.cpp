@@ -45,6 +45,7 @@ gd::Windows::~Windows()
 }
 
 int gd::Windows::create(
+    const LONG width, const LONG height,
     const std::string& windowTitle,
     DWORD windowStyle, bool enableDoubleClick
 )
@@ -59,9 +60,6 @@ int gd::Windows::create(
     std::wstring wWindowClass_ = strconverter.from_bytes(windowClass);
     LPCWSTR wWindowTitle = wWindowTitle_.c_str();
     LPCWSTR wWindowClass = wWindowClass_.c_str();
-
-	// DxWindowインスタンスを生成する
-    std::unique_ptr<Window> window = std::make_unique<Window>();
 
     // ウィンドウクラスの登録とウィンドウを生成する
     {
@@ -98,9 +96,7 @@ int gd::Windows::create(
         if (!RegisterClassExW(&wcex)) { error(L"ウィンドウクラスの登録に失敗しました。"); return 1; }
 
         // 生成するウィンドウサイズを取得する
-        int w, h;
-        window->GetDefaultSize(w, h);
-        RECT rc = { 0, 0, static_cast<LONG>(w), static_cast<LONG>(h) };
+        RECT rc = { 0, 0, width, height };
 
         // ウィンドウのクライアント領域のサイズから、ウィンドウ全体の領域のサイズを求める
         AdjustWindowRect(&rc, windowStyle, FALSE);
@@ -109,26 +105,12 @@ int gd::Windows::create(
         HWND hwnd = CreateWindowExW(
             0, wcex.lpszClassName, wWindowTitle, windowStyle,
             CW_USEDEFAULT, CW_USEDEFAULT, rc.right - rc.left, rc.bottom - rc.top, nullptr, nullptr, wcex.hInstance,
-            nullptr
+            reinterpret_cast<LPVOID>(this)
         );
         if (!hwnd) { error(L"ウィンドウの生成に失敗しました。"); return 1; }
 
         // ウィンドウの表示状態を設定する
         ShowWindow(hwnd, nCmdShow);
-
-        // ウィンドウのGWLP_USERDATA属性にwindowsのポインタを設定する
-        // これはWndProcからwindowsへアクセスできるようにするためである
-        SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(&windows));
-
-        // 生成したウィンドウのクライアント領域を取得する
-        GetClientRect(hwnd, &rc);
-
-        // windowを初期化する
-        window->Initialize(hwnd, rc.right - rc.left, rc.bottom - rc.top);
-
-        // windowをwindowsに登録する
-        assert(0 == windows.count(hwnd));
-        windows.insert(std::make_pair(hwnd, std::move(window)));
     }
 
 	return 0;
@@ -187,25 +169,76 @@ void gd::Windows::error(LPCWSTR description)
     MessageBoxW(nullptr, description, L"error", MB_OK | MB_ICONERROR);
 }
 
-LRESULT CALLBACK gd::Windows::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK gd::Windows::SubProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-    // GWLP_USERDATA属性に設定したgameのインスタンスを取得する
-    auto windows = reinterpret_cast<std::map<HWND, std::unique_ptr<Window>>*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
-    if ((nullptr == windows) || (0 == windows->count(hWnd)))
+    // ウィンドウが生成されたとき
+    if (WM_CREATE == uMsg)
     {
-        return DefWindowProc(hWnd, message, wParam, lParam);
+        // DxWindowインスタンスを生成する
+        std::unique_ptr<Window> window = std::make_unique<Window>();
+
+        // 生成したウィンドウのクライアント領域を取得する
+        RECT rc;
+        GetClientRect(hWnd, &rc);
+
+        // windowを初期化する
+        window->Initialize(hWnd, rc.right - rc.left, rc.bottom - rc.top);
+
+        // windowをwindowsに登録する
+        windows.insert(std::make_pair(hWnd, std::move(window)));
     }
-    std::unique_ptr<Window>& window = windows->at(hWnd);
 
-    // 送られてきたウィンドウメッセージをgameにも送る
-    window->GetMessage(message, wParam, lParam);
-
-    // WM_DESTROYが送られてきたらgamesからウィンドウハンドルを削除する
-    if (WM_DESTROY == message)
+    if (windows.count(hWnd))
     {
-        windows->erase(hWnd);
+        // 送られてきたウィンドウメッセージをgameにも送る
+        windows[hWnd]->GetMessage(uMsg, wParam, lParam);
+
+        // ウィンドウが破棄されようとしているときはwindowを破棄する
+        if (WM_DESTROY == uMsg)
+        {
+            windows.erase(hWnd);
+        }
     }
 
     // そのほかのメッセージはデフォルトの処理を行う
-    return DefWindowProc(hWnd, message, wParam, lParam);
+    return DefSubclassProc(hWnd, uMsg, wParam, lParam);
+}
+
+LRESULT CALLBACK gd::Windows::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+    // CreateWindowExWによってウィンドウが生成されるとき
+    if (WM_NCCREATE == uMsg)
+    {
+        // ウィンドウサブクラスの関数を定義
+        // uIdSubclassには自身のsubClassProcのポインタを入れる
+        // dwRefDataにはgd::Windowsのインスタンスを入れる
+        static SUBCLASSPROC const subClassProc = [](
+            HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData
+        ) -> LRESULT
+        {
+            assert(dwRefData);
+
+            // gd::Windowsのメンバ関数のSubProcを呼び出す
+            LRESULT const result = reinterpret_cast<Windows*>(dwRefData)->SubProc(hWnd, uMsg, wParam, lParam);
+
+            // ウィンドウが破棄される前にサブクラスの登録を解除する
+            if (WM_DESTROY == uMsg) { RemoveWindowSubclass(hWnd, reinterpret_cast<SUBCLASSPROC>(uIdSubclass), uIdSubclass); }
+
+            return result;
+        };
+
+        // subClassProcをウィンドウサブクラスとして登録する
+        CREATESTRUCT* const createStruct = reinterpret_cast<CREATESTRUCT*>(lParam);
+        if (!SetWindowSubclass(
+            hWnd, subClassProc, reinterpret_cast<UINT_PTR>(subClassProc), reinterpret_cast<DWORD_PTR>(createStruct->lpCreateParams)
+        ))
+        {
+            // サブクラス化が失敗したため0を返す
+            // これによりCreateWindowExWでNULLが返されるようになる
+            return 0;
+        }
+    }
+
+    // あとはデフォルトのウィンドウプロシージャに任せる
+    return DefWindowProcW(hWnd, uMsg, wParam, lParam);
 }

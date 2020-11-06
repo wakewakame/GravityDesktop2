@@ -28,6 +28,7 @@ namespace gd
 		 * @return ê¨å˜Ç∑ÇÈÇ∆0Ç™ï‘Ç≥ÇÍÇ‹Ç∑ÅBé∏îsÇ∑ÇÈÇ∆1à»è„ÇÃílÇ™ï‘Ç≥ÇÍÇÈ
 		 */
 		int create(
+			const LONG width, const LONG height,
 			const std::string& windowTitle = "window",
 			DWORD windowStyle = WS_OVERLAPPEDWINDOW, bool enableDoubleClick = true
 		);
@@ -60,6 +61,8 @@ namespace gd
 
 		static void error(LPCWSTR description);
 
-		static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+		LRESULT SubProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+		
+		static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 	};
 }

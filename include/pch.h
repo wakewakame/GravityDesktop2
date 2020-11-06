@@ -48,6 +48,8 @@
 #include <codecvt>
 #include <locale>
 
+#include <commctrl.h>
+
 namespace DX
 {
     inline void ThrowIfFailed(HRESULT hr)

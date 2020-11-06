@@ -42,7 +42,7 @@ target_link_libraries(GravityDesktop2 PRIVATE
     d3d11.lib dxgi.lib dxguid.lib uuid.lib
     kernel32.lib user32.lib
     comdlg32.lib advapi32.lib shell32.lib
-    ole32.lib oleaut32.lib
+    ole32.lib oleaut32.lib comctl32.lib
 
 )
 
