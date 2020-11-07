@@ -7,14 +7,14 @@ namespace gd
 {
 	struct Mouse
 	{
-		POINT point  = {};       // 現在のフレームのマウス座標
-		POINT point_ = {};       // 1フレーム前のマウス座標委
+		POINTS point  = {};       // 現在のフレームのマウス座標
+		POINTS point_ = {};       // 1フレーム前のマウス座標委
 
-		POINT lDragStart;        // 現在のフレームのaLDragStart
+		POINTS lDragStart;        // 現在のフレームのaLDragStart
 
-		POINT rDragStart;        // 現在のフレームのaRDragStart
+		POINTS rDragStart;        // 現在のフレームのaRDragStart
 
-		POINT mDragStart;        // 現在のフレームのaMDragStart
+		POINTS mDragStart;        // 現在のフレームのaMDragStart
 
 		bool lPressed  = false;  // 現在のフレームの左クリック
 		bool lPressed_ = false;  // 1フレーム前の左クリック
@@ -37,23 +37,23 @@ namespace gd
 	public:
 		MouseProcess();
 		virtual ~MouseProcess();
-		void OnWindowMessage(UINT message, WPARAM wParam, LPARAM lParam);
+		void OnWindowMessage(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 		void nextFrame();
 		Mouse getMouseStatus();
 
 	private:
-		POINT aMouse = {};       // 最新のマウス座標
-		POINT bMouse = {};       // 現在のフレームのマウス座標
-		POINT cMouse = {};       // 1フレーム前のマウス座標委
+		POINTS aMouse = {};       // 最新のマウス座標
+		POINTS bMouse = {};       // 現在のフレームのマウス座標
+		POINTS cMouse = {};       // 1フレーム前のマウス座標委
 
-		POINT aLDragStart;       // 左ドラッグを開始した時点でのマウス座標
-		POINT bLDragStart;       // 現在のフレームのaLDragStart
+		POINTS aLDragStart;       // 左ドラッグを開始した時点でのマウス座標
+		POINTS bLDragStart;       // 現在のフレームのaLDragStart
 
-		POINT aRDragStart;       // 右ドラッグを開始した時点でのマウス座標
-		POINT bRDragStart;       // 現在のフレームのaRDragStart
+		POINTS aRDragStart;       // 右ドラッグを開始した時点でのマウス座標
+		POINTS bRDragStart;       // 現在のフレームのaRDragStart
 
-		POINT aMDragStart;       // 中央ドラッグを開始した時点でのマウス座標
-		POINT bMDragStart;       // 現在のフレームのaMDragStart
+		POINTS aMDragStart;       // 中央ドラッグを開始した時点でのマウス座標
+		POINTS bMDragStart;       // 現在のフレームのaMDragStart
 
 		bool aLPressed = false;  // 最新の左クリック
 		bool bLPressed = false;  // 現在のフレームの左クリック
@@ -75,5 +75,7 @@ namespace gd
 
 		bool aMDouble = false;   // 最新の中央ダブルクリック
 		bool bMDouble = false;   // 現在のフレームの中央ダブルクリック
+
+		bool isCapture = false;  // SetCaptureが有効な場合はtrue
 	};
 }

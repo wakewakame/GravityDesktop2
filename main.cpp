@@ -29,6 +29,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 
     CustomComponent component;
     ret = windows.create<CustomComponent>();
+    ret = windows.create<CustomComponent>();
     if (ret) return 1;
 
     ret = windows.waitUntilExit();

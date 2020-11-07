@@ -10,42 +10,52 @@ gd::MouseProcess::~MouseProcess()
 
 }
 
-void gd::MouseProcess::OnWindowMessage(UINT message, WPARAM wParam, LPARAM lParam)
+void gd::MouseProcess::OnWindowMessage(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+	POINTS p = (*((POINTS FAR*) & (lParam)));
+
 	switch (message)
 	{
 	case WM_MOUSEMOVE:
-		aMouse.x = static_cast<LONG>(LOWORD(lParam));
-		aMouse.y = static_cast<LONG>(HIWORD(lParam));
+		aMouse = p;
 		break;
 
 	case WM_LBUTTONDOWN:
+		// ドラッグ時に画面外へマウスが移動してもキャプチャを続ける
+		if (!isCapture) { SetCapture(hWnd); isCapture = true; }
+		else { ReleaseCapture(); isCapture = false; }
 		aLPressed = true;
-		aLDragStart.x = static_cast<LONG>(LOWORD(lParam));
-		aLDragStart.y = static_cast<LONG>(HIWORD(lParam));
+		aLDragStart = p;
 		break;
 
 	case WM_RBUTTONDOWN:
+		// ドラッグ時に画面外へマウスが移動してもキャプチャを続ける
+		if (!isCapture) { SetCapture(hWnd); isCapture = true; }
+		else { ReleaseCapture(); isCapture = false; }
 		aRPressed = true;
-		aRDragStart.x = static_cast<LONG>(LOWORD(lParam));
-		aRDragStart.y = static_cast<LONG>(HIWORD(lParam));
+		aRDragStart = p;
 		break;
 
 	case WM_MBUTTONDOWN:
+		// ドラッグ時に画面外へマウスが移動してもキャプチャを続ける
+		if (!isCapture) { SetCapture(hWnd); isCapture = true; }
+		else { ReleaseCapture(); isCapture = false; }
 		aMPressed = true;
-		aMDragStart.x = static_cast<LONG>(LOWORD(lParam));
-		aMDragStart.y = static_cast<LONG>(HIWORD(lParam));
+		aMDragStart = p;
 		break;
 
 	case WM_LBUTTONUP:
+		if (isCapture) { ReleaseCapture(); isCapture = false; }
 		aLPressed = false;
 		break;
 
 	case WM_RBUTTONUP:
+		if (isCapture) { ReleaseCapture(); isCapture = false; }
 		aRPressed = false;
 		break;
 
 	case WM_MBUTTONUP:
+		if (isCapture) { ReleaseCapture(); isCapture = false; }
 		aMPressed = false;
 		break;
 

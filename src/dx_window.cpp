@@ -116,7 +116,7 @@ void gd::Window::Present()
 // Message handlers
 void gd::Window::OnWindowMessage(UINT message, WPARAM wParam, LPARAM lParam)
 {
-    mouseProc.OnWindowMessage(message, wParam, lParam);
+    mouseProc.OnWindowMessage(m_window, message, wParam, lParam);
 
     switch (message)
     {
