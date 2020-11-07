@@ -2,6 +2,7 @@
 
 #include "pch.h"
 #include "graph.h"
+#include "mouse.h"
 
 namespace gd
 {
@@ -17,8 +18,7 @@ namespace gd
 		virtual ~Component() {};
 
 		virtual void init(Graph& graph) {}
-		virtual void update(float elapsedTime) {}
-		virtual void render(Graph& graph) {}
+		virtual void render(Graph& graph, Mouse& mouse) {}
 		virtual std::string getTitle() const { return "default component"; }
 	};
 

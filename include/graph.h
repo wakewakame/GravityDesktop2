@@ -4,6 +4,24 @@
 
 namespace gd
 {
+	struct Color
+	{
+		uint8_t r, g, b, a;
+
+		Color() : r(0), g(0), b(0), a(255) {}
+
+		Color(uint32_t rgb, uint8_t a = 255)
+			: r((rgb & 0xFF0000) >> 16), g((rgb & 0x00FF00) >> 8), b((rgb & 0x0000FF) >> 0), a(a) {}
+
+		Color(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255) : r(r), g(g), b(b), a(a) {}
+
+		virtual ~Color() {}
+
+		DirectX::XMFLOAT4 toXMFLOAT4() const {
+			return DirectX::XMFLOAT4{ (float)r, (float)g, (float)b, (float)a };
+		}
+	};
+
 	class Graph
 	{
 	public:
@@ -17,7 +35,7 @@ namespace gd
 
 		void OnDeviceLost();
 
-		void Line();
+		void Line(const POINT p1, const POINT p2, const Color color = Color());
 
 	private:
 		Microsoft::WRL::ComPtr<ID3D11DeviceContext> m_d3dContext;

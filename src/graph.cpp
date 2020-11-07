@@ -61,7 +61,7 @@ void gd::Graph::OnDeviceLost()
     m_inputLayout.Reset();
 }
 
-void gd::Graph::Line()
+void gd::Graph::Line(const POINT p1, const POINT p2, const Color color)
 {
     m_d3dContext->OMSetBlendState(m_states->Opaque(), nullptr, 0xFFFFFFFF);
     m_d3dContext->OMSetDepthStencilState(m_states->DepthNone(), 0);
@@ -73,9 +73,12 @@ void gd::Graph::Line()
 
     m_batch->Begin();
 
+    Vector3 a_vec{ (float)p1.x, (float)p1.y, 0.f };
+    Vector3 b_vec{ (float)p2.x, (float)p2.y, 0.f };
+
     m_batch->DrawLine(
-        VertexPositionColor(Vector3(10.f, 20.f, 0.f), Colors::White),
-        VertexPositionColor(Vector3(100.f, 200.f, 0.f), Colors::White)
+        VertexPositionColor(a_vec, color.toXMFLOAT4()),
+        VertexPositionColor(b_vec, color.toXMFLOAT4())
     );
 
     m_batch->End();

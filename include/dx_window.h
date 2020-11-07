@@ -4,6 +4,7 @@
 #include "StepTimer.h"
 #include "component.h"
 #include "graph.h"
+#include "mouse.h"
 
 namespace gd
 {
@@ -79,5 +80,6 @@ namespace gd
 
 		std::unique_ptr<RootComponent> root_component;
 		Graph graph;
+		MouseProcess mouseProc;
 	};
 }

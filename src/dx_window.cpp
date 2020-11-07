@@ -53,12 +53,6 @@ void gd::Window::Update(DX::StepTimer const& timer)
     float elapsedTime = float(timer.GetElapsedSeconds());
 
     // TODO: Add your game logic here.
-
-    // rootComponent::update‚ðŒÄ‚Ño‚·
-    if (root_component)
-    {
-        root_component->update(elapsedTime);
-    }
 }
 
 // Draws the scene.
@@ -77,7 +71,10 @@ void gd::Window::Render()
     // rootComponent::render‚ðŒÄ‚Ño‚·
     if (root_component)
     {
-        root_component->render(graph);
+        mouseProc.nextFrame();
+        Mouse mouse = mouseProc.getMouseStatus();
+
+        root_component->render(graph, mouse);
     }
 
     Present();
@@ -119,6 +116,8 @@ void gd::Window::Present()
 // Message handlers
 void gd::Window::OnWindowMessage(UINT message, WPARAM wParam, LPARAM lParam)
 {
+    mouseProc.OnWindowMessage(message, wParam, lParam);
+
     switch (message)
     {
     case static_cast<UINT>(WM_APP_LIST::EXIT):
