@@ -35,7 +35,7 @@ namespace gd
 
 		void OnDeviceLost();
 
-		void Line(const POINT p1, const POINT p2, const Color color = Color());
+		void Line(const POINTS p1, const POINTS p2, const Color color = Color());
 
 	private:
 		Microsoft::WRL::ComPtr<ID3D11DeviceContext> m_d3dContext;

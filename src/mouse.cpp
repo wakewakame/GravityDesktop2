@@ -20,55 +20,55 @@ void gd::MouseProcess::OnWindowMessage(HWND hWnd, UINT message, WPARAM wParam, L
 		aMouse = p;
 		break;
 
-	case WM_LBUTTONDOWN:
-		// ドラッグ時に画面外へマウスが移動してもキャプチャを続ける
-		if (!isCapture) { SetCapture(hWnd); isCapture = true; }
-		else { ReleaseCapture(); isCapture = false; }
-		aLPressed = true;
-		aLDragStart = p;
-		break;
-
-	case WM_RBUTTONDOWN:
-		// ドラッグ時に画面外へマウスが移動してもキャプチャを続ける
-		if (!isCapture) { SetCapture(hWnd); isCapture = true; }
-		else { ReleaseCapture(); isCapture = false; }
-		aRPressed = true;
-		aRDragStart = p;
-		break;
-
-	case WM_MBUTTONDOWN:
-		// ドラッグ時に画面外へマウスが移動してもキャプチャを続ける
-		if (!isCapture) { SetCapture(hWnd); isCapture = true; }
-		else { ReleaseCapture(); isCapture = false; }
-		aMPressed = true;
-		aMDragStart = p;
-		break;
-
-	case WM_LBUTTONUP:
-		if (isCapture) { ReleaseCapture(); isCapture = false; }
-		aLPressed = false;
-		break;
-
-	case WM_RBUTTONUP:
-		if (isCapture) { ReleaseCapture(); isCapture = false; }
-		aRPressed = false;
-		break;
-
-	case WM_MBUTTONUP:
-		if (isCapture) { ReleaseCapture(); isCapture = false; }
-		aMPressed = false;
-		break;
-
 	case WM_LBUTTONDBLCLK:
 		aLDouble = true;
+
+	case WM_LBUTTONDOWN:
+		// ドラッグ時に画面外へマウスが移動してもキャプチャを続ける
+		if (setMouseCapture(hWnd))
+		{
+			aLPressed = true;
+			aLDragStart = p;
+		}
 		break;
 
 	case WM_RBUTTONDBLCLK:
 		aRDouble = true;
+
+	case WM_RBUTTONDOWN:
+		// ドラッグ時に画面外へマウスが移動してもキャプチャを続ける
+		if (setMouseCapture(hWnd))
+		{
+			aRPressed = true;
+			aRDragStart = p;
+		}
 		break;
 
 	case WM_MBUTTONDBLCLK:
 		aMDouble = true;
+
+	case WM_MBUTTONDOWN:
+		// ドラッグ時に画面外へマウスが移動してもキャプチャを続ける
+		if (setMouseCapture(hWnd))
+		{
+			aMPressed = true;
+			aMDragStart = p;
+		}
+		break;
+
+	case WM_LBUTTONUP:
+		// マウスのキャプチャを終了して、aLPressed、aRPressed、aMPressedにfalseを設定する
+		releaseMouseCapture();
+		break;
+
+	case WM_RBUTTONUP:
+		// マウスのキャプチャを終了して、aLPressed、aRPressed、aMPressedにfalseを設定する
+		releaseMouseCapture();
+		break;
+
+	case WM_MBUTTONUP:
+		// マウスのキャプチャを終了して、aLPressed、aRPressed、aMPressedにfalseを設定する
+		releaseMouseCapture();
 		break;
 	}
 }
@@ -128,4 +128,18 @@ gd::Mouse gd::MouseProcess::getMouseStatus()
 	mouse.mDouble = bMDouble;
 
 	return mouse;
+}
+
+bool gd::MouseProcess::setMouseCapture(HWND hWnd)
+{
+	if (!isCaptured) { SetCapture(hWnd); isCaptured = true; return true; }
+	else { releaseMouseCapture(); return false; }
+}
+
+void gd::MouseProcess::releaseMouseCapture()
+{
+	if (isCaptured) { ReleaseCapture(); isCaptured = false; }
+	aLPressed = false;
+	aRPressed = false;
+	aMPressed = false;
 }

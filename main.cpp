@@ -10,6 +10,9 @@ public:
         auto p1 = mouse.point;
         auto p2 = p1; p2.x += 100;
         auto color = gd::Color(0x000000);
+        static bool s = false;
+        s = mouse.lDouble ? !s : s;
+        if (s) color = gd::Color(0xFFFFFF);
         if (mouse.lPressed) color = gd::Color(0xFF0000);
         if (mouse.rPressed) color = gd::Color(0x00FF00);
         if (mouse.mPressed) color = gd::Color(0x0000FF);

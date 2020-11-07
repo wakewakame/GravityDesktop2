@@ -38,7 +38,16 @@ namespace gd
 		MouseProcess();
 		virtual ~MouseProcess();
 		void OnWindowMessage(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+
+		/**
+		 * 現在のフレームでのマウスの状態を更新する
+		 */
 		void nextFrame();
+
+		/**
+		 * 現在のフレームにおけるマウスの状態を取得する
+		 * @return 現在のフレームにおけるマウスの状態
+		 */
 		Mouse getMouseStatus();
 
 	private:
@@ -76,6 +85,19 @@ namespace gd
 		bool aMDouble = false;   // 最新の中央ダブルクリック
 		bool bMDouble = false;   // 現在のフレームの中央ダブルクリック
 
-		bool isCapture = false;  // SetCaptureが有効な場合はtrue
+		bool isCaptured = false;
+
+		/**
+		 * マウスのキャプチャを開始する
+		 * 既にキャプチャが開始されている場合はreleaseMouseCaptureを呼び出してキャプチャを終了する
+		 * @return 成功すればtrueが返り、それ以外(既にキャプチャが開始されているなど)ではfalseが返る
+		 */
+		bool setMouseCapture(HWND hWnd);
+
+		/**
+		 * マウスのキャプチャを停止する
+		 * その際にaLPressed、aRPressed、aMPressedにfalseを設定する
+		 */
+		void releaseMouseCapture();
 	};
 }

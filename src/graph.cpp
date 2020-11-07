@@ -61,7 +61,7 @@ void gd::Graph::OnDeviceLost()
     m_inputLayout.Reset();
 }
 
-void gd::Graph::Line(const POINT p1, const POINT p2, const Color color)
+void gd::Graph::Line(const POINTS p1, const POINTS p2, const Color color)
 {
     m_d3dContext->OMSetBlendState(m_states->Opaque(), nullptr, 0xFFFFFFFF);
     m_d3dContext->OMSetDepthStencilState(m_states->DepthNone(), 0);
