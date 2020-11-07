@@ -4,8 +4,9 @@
 class CustomComponent : public gd::RootComponent
 {
 public:
-    void update(float a) override { }
-    void render(gd::Graph& graph) override {  }
+    void init(gd::Graph& graph) {}
+    void update(float a) override {}
+    void render(gd::Graph& graph) override {}
 };
 
 int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int nCmdShow)

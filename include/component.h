@@ -5,6 +5,11 @@
 
 namespace gd
 {
+	enum class WM_APP_LIST : UINT
+	{
+		EXIT = WM_APP + 0x0000
+	};
+
 	class Component
 	{
 	public:
@@ -32,7 +37,9 @@ namespace gd
 		virtual DWORD getWindowStyle() const { return WS_OVERLAPPEDWINDOW; }
 		virtual UINT getWindowClassStyle() const { return CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS; }
 		virtual HICON getIcon() const { return LoadIconW(nullptr, L"IDI_APPLICATION"); }
-		virtual void exit() final { DestroyWindow(this->hWnd); }
+		virtual void closeWindow() final {
+			if (hWnd) PostMessageW(hWnd, static_cast<UINT>(WM_APP_LIST::EXIT), 0, 0);
+		}
 
 	private:
 		HINSTANCE hInstance = nullptr;

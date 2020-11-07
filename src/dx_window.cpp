@@ -121,6 +121,10 @@ void gd::Window::OnWindowMessage(UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
     {
+    case static_cast<UINT>(WM_APP_LIST::EXIT):
+        DestroyWindow(m_window);
+        break;
+
     case WM_PAINT:
         if (s_in_sizemove)
         {
