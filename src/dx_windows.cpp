@@ -6,11 +6,22 @@ size_t gd::Windows::createCount = 0;
 
 gd::Windows::Windows(HINSTANCE hInstance, int nCmdShow) : hInstance(hInstance), nCmdShow(nCmdShow)
 {
+    /*
+    メモ : CoInitializeExの第二引数にCOINIT_APARTMENTTHREADEDを指定している理由について
+
+    DirectX3D自体は簡易COMを使用しているが、Direct3D Audioなどはフルスペックの
+    COMに依存したコンポーネントがある。
+    CoInitializeExの第二引数にCOINITBASE_MULTITHREADEDなどを指定した状態でフ
+    ルスペックのCOMに依存したコンポーネントを使用するとヒープメモリを破壊される可能
+    性があるため、ここではCOINIT_APARTMENTTHREADEDを指定した。
+    */
+
     // DirectXMathライブラリが使用可能かを確認する
     if (!XMVerifyCPUSupport()) { error(L"このPCではDirectXMathが利用できません。"); }
 
-    // 現在のスレッドでCOMライブラリを初期化する
-    HRESULT hr = CoInitializeEx(nullptr, COINITBASE_MULTITHREADED);
+    // 現在のスレッドでCOMライブラリを使用することを宣言する
+    HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+
     if (FAILED(hr)) { error(L"COMライブラリの初期化に失敗しました。"); }
 }
 
@@ -44,19 +55,20 @@ gd::Windows::~Windows()
     CoUninitialize();
 }
 
-int gd::Windows::create(
-    const LONG width, const LONG height,
-    const std::string& windowTitle,
-    DWORD windowStyle, bool enableDoubleClick
-)
+int gd::Windows::create(std::unique_ptr<RootComponent>&& rootComponent)
 {
+    assert(static_cast<bool>(rootComponent));
+
+    // rootComponentにhInstanceを渡す
+    rootComponent->setInstance(hInstance);
+
     // ウィンドウクラスの名前の重複を避けるために語尾に数字を追加する
-    std::string windowClass = windowTitle + std::to_string(createCount++);
+    std::string windowClass = rootComponent->getTitle() + std::to_string(createCount++);
 
     // std::stringからLPCWSTRに変換する
     using convert_t = std::codecvt_utf8<wchar_t>;
     std::wstring_convert<convert_t, wchar_t> strconverter;
-    std::wstring wWindowTitle_ = strconverter.from_bytes(windowTitle);
+    std::wstring wWindowTitle_ = strconverter.from_bytes(rootComponent->getTitle());
     std::wstring wWindowClass_ = strconverter.from_bytes(windowClass);
     LPCWSTR wWindowTitle = wWindowTitle_.c_str();
     LPCWSTR wWindowClass = wWindowClass_.c_str();
@@ -67,11 +79,8 @@ int gd::Windows::create(
         WNDCLASSEXW wcex = {};
         wcex.cbSize = sizeof(WNDCLASSEXW);
 
-        // サイズが変わったとき，ウインドウ全体を再描画する
-        wcex.style |= CS_HREDRAW | CS_VREDRAW;
-
-        // ダブルクリックを有効化する
-        if (enableDoubleClick) wcex.style |= CS_DBLCLKS;
+        // ウィンドウクラスのスタイルを指定する
+        wcex.style = rootComponent->getWindowClassStyle();
 
         // 送られてくるウィンドウメッセージを処理するためのコールバック関数(ウィンドウプロシージャ)を指定する
         wcex.lpfnWndProc = WndProc;
@@ -80,8 +89,8 @@ int gd::Windows::create(
         wcex.hInstance = hInstance;
 
         // アプリケーションのアイコンを指定する
-        wcex.hIcon = LoadIconW(nullptr, L"IDI_APPLICATION");
-        wcex.hIconSm = LoadIconW(nullptr, L"IDI_APPLICATION");
+        wcex.hIcon = rootComponent->getIcon();
+        wcex.hIconSm = rootComponent->getIcon();
 
         // ウィンドウのマウスカーソルを指定する
         wcex.hCursor = LoadCursorW(nullptr, IDC_ARROW);
@@ -96,21 +105,38 @@ int gd::Windows::create(
         if (!RegisterClassExW(&wcex)) { error(L"ウィンドウクラスの登録に失敗しました。"); return 1; }
 
         // 生成するウィンドウサイズを取得する
-        RECT rc = { 0, 0, width, height };
+        SIZE windowSize = rootComponent->getDefaultSize();
+        RECT rc = { 0, 0, windowSize.cx, windowSize.cy };
 
         // ウィンドウのクライアント領域のサイズから、ウィンドウ全体の領域のサイズを求める
+        DWORD windowStyle = rootComponent->getWindowStyle();
         AdjustWindowRect(&rc, windowStyle, FALSE);
 
         // ウィンドウを生成する
-        HWND hwnd = CreateWindowExW(
+        HWND hWnd = CreateWindowExW(
             0, wcex.lpszClassName, wWindowTitle, windowStyle,
             CW_USEDEFAULT, CW_USEDEFAULT, rc.right - rc.left, rc.bottom - rc.top, nullptr, nullptr, wcex.hInstance,
             reinterpret_cast<LPVOID>(this)
         );
-        if (!hwnd) { error(L"ウィンドウの生成に失敗しました。"); return 1; }
+        if (!hWnd) { error(L"ウィンドウの生成に失敗しました。"); return 1; }
 
         // ウィンドウの表示状態を設定する
-        ShowWindow(hwnd, nCmdShow);
+        ShowWindow(hWnd, nCmdShow);
+
+        // 生成したウィンドウのクライアント領域を取得する
+        GetClientRect(hWnd, &rc);
+
+        // DxWindowインスタンスを生成する
+        std::unique_ptr<Window> window = std::make_unique<Window>();
+
+        // windowを初期化する
+        window->Initialize(hWnd, rc.right - rc.left, rc.bottom - rc.top);
+
+        // windowにrootComponentを登録する
+        window->SetRootComponent(std::move(rootComponent));
+
+        // windowをwindowsに登録する
+        windows.insert(std::make_pair(hWnd, std::move(window)));
     }
 
 	return 0;
@@ -171,27 +197,10 @@ void gd::Windows::error(LPCWSTR description)
 
 LRESULT CALLBACK gd::Windows::SubProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-    // ウィンドウが生成されたとき
-    if (WM_CREATE == uMsg)
-    {
-        // DxWindowインスタンスを生成する
-        std::unique_ptr<Window> window = std::make_unique<Window>();
-
-        // 生成したウィンドウのクライアント領域を取得する
-        RECT rc;
-        GetClientRect(hWnd, &rc);
-
-        // windowを初期化する
-        window->Initialize(hWnd, rc.right - rc.left, rc.bottom - rc.top);
-
-        // windowをwindowsに登録する
-        windows.insert(std::make_pair(hWnd, std::move(window)));
-    }
-
     if (windows.count(hWnd))
     {
         // 送られてきたウィンドウメッセージをgameにも送る
-        windows[hWnd]->GetMessage(uMsg, wParam, lParam);
+        windows[hWnd]->OnWindowMessage(uMsg, wParam, lParam);
 
         // ウィンドウが破棄されようとしているときはwindowを破棄する
         if (WM_DESTROY == uMsg)

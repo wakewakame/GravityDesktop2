@@ -1,4 +1,12 @@
 #include "dx_windows.h"
+#include "component.h"
+
+class CustomComponent : public gd::RootComponent
+{
+public:
+    void update(float a) override { }
+    void render(gd::Graph& graph) override {  }
+};
 
 int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int nCmdShow)
 {
@@ -6,10 +14,8 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 
     gd::Windows windows{ hInstance, nCmdShow };
 
-    ret = windows.create(100, 100, "hoge");
-    if (ret) return 1;
-
-    ret = windows.create(200, 200, "hoge");
+    CustomComponent component;
+    ret = windows.create<CustomComponent>();
     if (ret) return 1;
 
     ret = windows.waitUntilExit();

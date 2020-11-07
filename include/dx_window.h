@@ -2,6 +2,7 @@
 
 #include "pch.h"
 #include "StepTimer.h"
+#include "component.h"
 #include "graph.h"
 
 namespace gd
@@ -26,15 +27,17 @@ namespace gd
 		void Tick();
 
 		// Messages
-		void GetMessage(UINT message, WPARAM wParam, LPARAM lParam);
 		void OnActivated();
 		void OnDeactivated();
 		void OnSuspending();
 		void OnResuming();
 		void OnWindowSizeChanged(int width, int height);
 
-		// Properties
-		void GetDefaultSize(int& width, int& height) const noexcept;
+		// この関数にウィンドウメッセージが送られてくる
+		void OnWindowMessage(UINT message, WPARAM wParam, LPARAM lParam);
+
+		// RootComponentを登録する
+		void SetRootComponent(std::unique_ptr<RootComponent>&& root_component);
 
 	private:
 
@@ -50,25 +53,31 @@ namespace gd
 		void OnDeviceLost();
 
 		// Device resources.
-		HWND                                            m_window;
-		int                                             m_outputWidth;
-		int                                             m_outputHeight;
+		HWND m_window;
+		int  m_outputWidth;
+		int  m_outputHeight;
 
-		D3D_FEATURE_LEVEL                               m_featureLevel;
-		Microsoft::WRL::ComPtr<ID3D11Device1>           m_d3dDevice;
-		Microsoft::WRL::ComPtr<ID3D11DeviceContext1>    m_d3dContext;
+		/*
+		メモ
+		ComPtrは参照カウンタを持つスマートポインタ
+		コピーコンストラクタと代入演算子はともに参照カウンタを+1してポインタの所有権を共有する
+		*/
 
-		Microsoft::WRL::ComPtr<IDXGISwapChain1>         m_swapChain;
-		Microsoft::WRL::ComPtr<ID3D11RenderTargetView>  m_renderTargetView;
-		Microsoft::WRL::ComPtr<ID3D11DepthStencilView>  m_depthStencilView;
+		Microsoft::WRL::ComPtr<ID3D11Device>        m_d3dDevice;
+		Microsoft::WRL::ComPtr<ID3D11DeviceContext> m_d3dContext;
+
+		Microsoft::WRL::ComPtr<IDXGISwapChain1>        m_swapChain;
+		Microsoft::WRL::ComPtr<ID3D11RenderTargetView> m_renderTargetView;
+		Microsoft::WRL::ComPtr<ID3D11DepthStencilView> m_depthStencilView;
 
 		// Rendering loop timer.
-		DX::StepTimer                                   m_timer;
+		DX::StepTimer m_timer;
 
 		bool s_in_sizemove = false;
-		bool s_in_suspend = false;
-		bool s_minimized = false;
+		bool s_in_suspend  = false;
+		bool s_minimized   = false;
 
+		std::unique_ptr<RootComponent> root_component;
 		Graph graph;
 	};
 }

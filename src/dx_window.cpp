@@ -13,8 +13,7 @@ extern "C"
 gd::Window::Window() noexcept :
     m_window(nullptr),
     m_outputWidth(800),
-    m_outputHeight(600),
-    m_featureLevel(D3D_FEATURE_LEVEL_9_1)
+    m_outputHeight(600)
 {
 }
 
@@ -54,7 +53,12 @@ void gd::Window::Update(DX::StepTimer const& timer)
     float elapsedTime = float(timer.GetElapsedSeconds());
 
     // TODO: Add your game logic here.
-    elapsedTime;
+
+    // rootComponent::updateを呼び出す
+    if (root_component)
+    {
+        root_component->update(elapsedTime);
+    }
 }
 
 // Draws the scene.
@@ -69,7 +73,12 @@ void gd::Window::Render()
     Clear();
 
     // TODO: Add your rendering code here.
-    graph.Line();
+
+    // rootComponent::renderを呼び出す
+    if (root_component)
+    {
+        root_component->render(graph);
+    }
 
     Present();
 }
@@ -108,7 +117,7 @@ void gd::Window::Present()
 }
 
 // Message handlers
-void gd::Window::GetMessage(UINT message, WPARAM wParam, LPARAM lParam)
+void gd::Window::OnWindowMessage(UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
     {
@@ -204,6 +213,14 @@ void gd::Window::GetMessage(UINT message, WPARAM wParam, LPARAM lParam)
     }
 }
 
+void gd::Window::SetRootComponent(std::unique_ptr<gd::RootComponent>&& root_component)
+{
+    if (!static_cast<bool>(root_component)) return;
+    this->root_component.swap(root_component);
+    this->root_component->setHwnd(m_window);
+    this->root_component->init(graph);
+}
+
 void gd::Window::OnActivated()
 {
     // TODO: Game is becoming active window.
@@ -236,44 +253,38 @@ void gd::Window::OnWindowSizeChanged(int width, int height)
     // TODO: Game window is being resized.
 }
 
-// Properties
-void gd::Window::GetDefaultSize(int& width, int& height) const noexcept
-{
-    // TODO: Change to desired default window size (note minimum size is 320x200).
-    width = 800;
-    height = 600;
-}
-
-// These are the resources that depend on the device.
 void gd::Window::CreateDevice()
 {
-    UINT creationFlags = 0;
+    /*
+    メモ
+    _DEBUGはDebugビルド時に定#defineされる
+    NDEBUFはReleaseビルド時に#defineされる
+    _DEBUGはVCの独自拡張で、NDEBUFはC言語標準
+    */
 
-#ifdef _DEBUG
-    creationFlags |= D3D11_CREATE_DEVICE_DEBUG;
-#endif
-
-    static const D3D_FEATURE_LEVEL featureLevels[] =
-    {
-        // TODO: Modify for supported Direct3D feature levels
+    // ID3D11DeviceとID3D11DeviceContextの作成
+    ComPtr<ID3D11Device> device;
+    ComPtr<ID3D11DeviceContext> context;
+    static const D3D_FEATURE_LEVEL featureLevels[] = {
         D3D_FEATURE_LEVEL_11_1,
         D3D_FEATURE_LEVEL_11_0
     };
-
-    // Create the DX11 API device object, and get a corresponding context.
-    ComPtr<ID3D11Device> device;
-    ComPtr<ID3D11DeviceContext> context;
+    D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_11_0;
     DX::ThrowIfFailed(D3D11CreateDevice(
-        nullptr,                            // specify nullptr to use the default adapter
-        D3D_DRIVER_TYPE_HARDWARE,
-        nullptr,
-        creationFlags,
-        featureLevels,
-        _countof(featureLevels),
-        D3D11_SDK_VERSION,
-        device.ReleaseAndGetAddressOf(),    // returns the Direct3D device created
-        &m_featureLevel,                    // returns feature level of device created
-        context.ReleaseAndGetAddressOf()    // returns the device immediate context
+        nullptr,                         // nullptrでデフォルトのIDXGIAdapterを使用する
+        D3D_DRIVER_TYPE_HARDWARE,        // ハードウェアドライバーを使用する
+        nullptr,                         // ソフトウェアラスタライザーを実装するDLLへのハンドル
+#ifdef _DEBUG
+        D3D11_CREATE_DEVICE_DEBUG,       // デバッグモードの時はデバッグレイヤーを有効にする
+#else
+        0,
+#endif
+        featureLevels,                   // 作成を試みる機能レベルの順序を決定するD3D_FEATURE_LEVELの配列へのポインター
+        _countof(featureLevels),         // featureLevelsの要素数
+        D3D11_SDK_VERSION,               // SDKバージョン
+        device.ReleaseAndGetAddressOf(), // 作成されたデバイスを表すID3D11Deviceオブジェクトへのポインタ
+        &featureLevel,                   // featureLevelsの中で作成に使用された値がfeatureLevelに代入される
+        context.ReleaseAndGetAddressOf() // デバイスコンテキストを表すID3D11DeviceContextオブジェクトへのポインタ
     ));
 
 #ifndef NDEBUG
@@ -300,11 +311,18 @@ void gd::Window::CreateDevice()
     }
 #endif
 
+    /*
+    ComPtr::Asはポインタのコピーにdynamic_castみたいな処理をしている
+    しかし、以下の処理はポインタのコピー元もコピー先も同じ型なので
+    代入演算子を使ってポインタをコピーしたほうがいいのではないかと思う
+    ComPtrの代入演算子を使用していない理由はよくわからないけど
+    公式のサンプルプログラムがこうしていたので、マネをしておく
+    */
     DX::ThrowIfFailed(device.As(&m_d3dDevice));
     DX::ThrowIfFailed(context.As(&m_d3dContext));
 
-    // TODO: Initialize device dependent objects here (independent of window size).
-    graph.CreateDevice(m_d3dDevice.Get(), m_d3dContext.Get());
+    // GraphのインスタンスにID3D11DeviceContextを渡す
+    graph.CreateDevice(m_d3dContext);
 }
 
 // Allocate all memory resources that change on a window SizeChanged event.

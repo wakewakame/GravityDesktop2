@@ -57,9 +57,9 @@ target_compile_definitions(GravityDesktop2 PRIVATE
 	_UNICODE
 	UNICODE
 
-	# ターゲットを Windows 10 以降に指定 (これがないとDirectXTKがエラーを出す)
-	WINVER=_WIN32_WINNT_WIN10
-	_WIN32_WINNT=_WIN32_WINNT_WIN10
+	# ターゲットを Windows 7 以降に指定 (これがないとDirectXTKがエラーを出す)
+	WINVER=_WIN32_WINNT_WIN7
+	_WIN32_WINNT=_WIN32_WINNT_WIN7
 
 )
 

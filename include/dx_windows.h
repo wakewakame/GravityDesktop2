@@ -2,6 +2,7 @@
 
 #include "pch.h"
 #include "dx_window.h"
+#include "component.h"
 
 namespace gd
 {
@@ -22,20 +23,31 @@ namespace gd
 
 		/**
 		 * ウィンドウを生成します。
-		 * @param windowTitle ウィンドウのタイトルバーに表示される文字列を指定する
-		 * @param windowStyle WinUser.hで定義されているWS_から始まる定数を指定する
-		 * @param enableDoubleClick falseを指定するとダブルクリックが単なる2回分のクリックとして扱われる
-		 * @return 成功すると0が返されます。失敗すると1以上の値が返される
+		 * @param T RootComponentの派生クラス
+		 * @param args... Tのコンストラクタ引数に渡す値
+		 * @return 成功すると0が返され、失敗すると1以上の値が返される
 		 */
-		int create(
-			const LONG width, const LONG height,
-			const std::string& windowTitle = "window",
-			DWORD windowStyle = WS_OVERLAPPEDWINDOW, bool enableDoubleClick = true
-		);
+		template<class T, class... Args>
+		int create(Args&&... args)
+		{
+			static_assert(
+				std::is_base_of<RootComponent, T>::value,
+				"テンプレート引数に指定された型がRootComponentクラスを継承していません"
+			);
+
+			// RootComponentのインスタンスを生成する
+			std::unique_ptr<RootComponent> rootComponent{
+				static_cast<RootComponent*>(new T(std::forward<Args>(args)...))
+			};
+
+			// ウィンドウを作成する
+			return create(std::move(rootComponent));
+		}
 
 		/**
 		 * 描画するためにループ処理を行います。
 		 * ウィンドウが閉じられるまで、この関数が返ることはありません。
+		 * @return 成功すると0が返され、失敗すると1以上の値が返される
 		 */
 		int waitUntilExit();
 
@@ -52,17 +64,13 @@ namespace gd
 
 	private:
 		HINSTANCE hInstance;
-
 		int nCmdShow;
-
+		std::map<HWND, std::unique_ptr<Window>> windows;
 		static size_t createCount;
 
-		std::map<HWND, std::unique_ptr<Window>> windows;
-
+		int create(std::unique_ptr<RootComponent>&& rootComponent);
 		static void error(LPCWSTR description);
-
-		LRESULT SubProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-		
 		static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+		LRESULT SubProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 	};
 }
