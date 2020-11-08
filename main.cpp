@@ -5,6 +5,7 @@ class CustomComponent : public gd::RootComponent
 {
 public:
     bool s = false;
+    bool s2 = false;
     int div = 3;
     float t = 0.0f;
     void init(gd::Graph& graph) {}
@@ -12,17 +13,19 @@ public:
     {
         auto p1 = mouse.point;
         auto p2 = p1; p2.x += 100;
-        auto color = gd::color(0x000000);
+        uint32_t color = 0x000000;
+        uint32_t color2 = 0xFFFFFF;
         s = mouse.lDouble ? !s : s;
-        if (s) color = gd::color(0xFFFFFF);
-        if (mouse.lPressed) color = gd::color(0xFF0000);
-        if (mouse.rPressed) color = gd::color(0x00FF00);
-        if (mouse.mPressed) color = gd::color(0x0000FF);
+        s2 = mouse.rDouble ? !s2 : s2;
+        if (s) color = 0xFFFFFF;
+        if (s2) color2 = 0x0000FF;
+        if (mouse.lPressed) color = 0xFF0000;
+        if (mouse.rPressed) color2 = 0xFF0000;
+        if (mouse.mPressed) color = 0x0000FF;
         
-        graph.fill(color);
-        graph.beginShape(true, false);
+        graph.beginShape(true, 10.f);
         if (mouse.zDelta) div += mouse.zDelta / 120;
-        if (div < 3) { div = 3; }
+        if (div < 2) { div = 2; }
         if (div > 128) { div = 128; }
         t += 0.1f;
         for (int i = 0; i < div; i++)
@@ -31,10 +34,11 @@ public:
             float theta = t + DirectX::XM_2PI * p;
             float x = std::cos(theta) * 100.0f + (float)p1.x;
             float y = std::sin(theta) * 100.0f + (float)p1.y;
-            graph.fill(color);
+            graph.fill(color, 128);
+            graph.stroke(color2, 128);
             graph.vertext(x, y);
         }
-        graph.endShape();
+        graph.endShape(true);
     }
 };
 

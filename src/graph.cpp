@@ -5,21 +5,6 @@
 using namespace DirectX;
 using namespace DirectX::SimpleMath;
 
-XMFLOAT4 gd::color() { return DirectX::XMFLOAT4{ 0.f, 0.f, 0.f, 1.f }; }
-XMFLOAT4 gd::color(uint32_t rgb, uint8_t a)
-{
-	return DirectX::XMFLOAT4{
-		(float)((rgb & 0xFF0000) >> 16),
-		(float)((rgb & 0x00FF00) >> 8),
-		(float)((rgb & 0x0000FF) >> 0),
-		(float)a
-	};
-}
-XMFLOAT4 gd::color(float r, float g, float b, float a)
-{
-	return DirectX::XMFLOAT4{ r, g, b, a };
-}
-
 gd::Graph::Graph() : m_d3dContext(nullptr)
 {
 
@@ -76,30 +61,45 @@ void gd::Graph::OnDeviceLost()
     m_inputLayout.Reset();
 }
 
-void gd::Graph::fill(Color c)
+void gd::Graph::fill(uint32_t rgb, uint8_t a)
 {
-    fillBrush = c;
+    fill(
+        (float)((rgb & 0xFF0000) >> 16),
+        (float)((rgb & 0x00FF00) >> 8),
+        (float)((rgb & 0x0000FF) >> 0),
+        (float)a
+    );
 }
 
-void gd::Graph::stroke(Color c)
+void gd::Graph::fill(float r, float g, float b, float a)
 {
-    strokeBrush = c;
+    fillBrush = XMFLOAT4{ r, g, b, a };
 }
 
-void gd::Graph::strokeWeight(float weight)
+void gd::Graph::stroke(uint32_t rgb, uint8_t a)
 {
-    strokeWeightBrush = weight;
+    stroke(
+        (float)((rgb & 0xFF0000) >> 16),
+        (float)((rgb & 0x00FF00) >> 8),
+        (float)((rgb & 0x0000FF) >> 0),
+        (float)a
+    );
 }
 
-int gd::Graph::beginShape(bool enableFill, bool enableStroke)
+void gd::Graph::stroke(float r, float g, float b, float a)
+{
+    strokeBrush = XMFLOAT4{ r, g, b, a };
+}
+
+int gd::Graph::beginShape(bool enableFill, float strokeWeight)
 {
     if (isShapeBegan) return 1;
 
     isEnableFill = enableFill;
-    isEnableStroke = enableStroke;
+    strokeWeightBrush = strokeWeight;
 
     if (isEnableFill) { fillIndices.clear(); fillVertices.clear(); }
-    if (isEnableStroke) { strokeVertices.clear(); }
+    if (strokeWeightBrush > 0.f) { strokeVertices.clear(); }
 
     isShapeBegan = true;
     return 0;
@@ -112,6 +112,12 @@ void gd::Graph::vertext(float x, float y)
         VertexPositionColor v{ Vector3{ x, y, 0.f }, fillBrush };
         fillVertices.push_back(v);
     }
+
+    if (strokeWeightBrush > 0.f)
+    {
+        VertexPositionColor v{ Vector3{ x, y, 0.f }, strokeBrush };
+        strokeVertices.push_back(v);
+    }
 }
 
 int gd::Graph::endShape(bool loopStroke)
@@ -119,9 +125,8 @@ int gd::Graph::endShape(bool loopStroke)
     if (!isShapeBegan) return 1;
     isShapeBegan = false;
 
-    if ((!isEnableFill) && (!isEnableStroke)) return 0;
+    if ((!isEnableFill) && (strokeWeightBrush <= 0.f)) return 0;
 
-    m_d3dContext->OMSetBlendState(m_states->Opaque(), nullptr, 0xFFFFFFFF);
     m_d3dContext->OMSetDepthStencilState(m_states->DepthNone(), 0);
     m_d3dContext->RSSetState(m_states->CullNone());
 
@@ -131,7 +136,8 @@ int gd::Graph::endShape(bool loopStroke)
 
     m_batch->Begin();
 
-    if (isEnableFill)
+    // 頂点数が2以下だと描画しないのと同じであるため、頂点数が3以上で描画
+    if (fillVertices.size() >= 3)
     {
         // TRIANGLESTRIPで塗りつぶしを行うので、頂点のインデックスを指定する必要がある
         // たとえば、頂点が10個の場合は次のようにインデックスを振る (左: 頂点の追加順, 右: 頂点のインデックス)
@@ -140,7 +146,6 @@ int gd::Graph::endShape(bool loopStroke)
         fillIndices.reserve(fillVertices.size());
         for (uint16_t index = 0; index < size; index++)
         {
-            //uint16_t strip_index = (size + ((index + 1) / 2) * (1 - (index & 1) * 2)) % size;
             uint16_t strip_index = (index & 0b1) ? (size - (index / 2) - 1) : (index / 2);
             fillIndices.push_back(strip_index);
         }
@@ -152,11 +157,64 @@ int gd::Graph::endShape(bool loopStroke)
         );
     }
 
-    if (isEnableStroke)
+    // 頂点数が1以下だと描画しないのと同じであるため、頂点数が2以上で描画
+    if (strokeVertices.size() >= 2)
     {
+        // strokeVerticesに太さを持たせた頂点配列を計算してtmpStrokeVerticesに格納する
+        std::vector<DirectX::VertexPositionColor> tmpStrokeVertices;
+        tmpStrokeVertices.reserve(
+            (strokeVertices.size() * 4) + (loopStroke ? 2 : -4)
+        );
+
+        // 必要な要素数をあらかじめ確保する
+        if (loopStroke) { strokeVertices.push_back(strokeVertices[0]); }
+
+        float tmp = 0.f;
+        for (size_t index = 0; index < strokeVertices.size() - 1; index++)
+        {
+            // 直線の先端と終端の点
+            const Vector3 p1 = strokeVertices[index].position;
+            const Vector3 p2 = strokeVertices[index + 1].position;
+
+            // 直線の法線の単位ベクトル
+            Vector3 normal = p2 - p1;
+            normal.Normalize();
+            tmp = normal.x; normal.x = -normal.y; normal.y = tmp;
+
+            // 生成される直線の先端の上側
+            Vector3 p1_up = p1 + (normal * strokeWeightBrush);
+            tmpStrokeVertices.push_back(
+                VertexPositionColor{ p1_up, strokeVertices[index].color }
+            );
+
+            // 生成される直線の先端の下側
+            Vector3 p1_dw = p1 - (normal * strokeWeightBrush);
+            tmpStrokeVertices.push_back(
+                VertexPositionColor{ p1_dw, strokeVertices[index].color }
+            );
+
+            // 生成される直線の終端の上側
+            Vector3 p2_up = p2 + (normal * strokeWeightBrush);
+            tmpStrokeVertices.push_back(
+                VertexPositionColor{ p2_up, strokeVertices[index + 1].color }
+            );
+
+            // 生成される直線の終端の上側
+            Vector3 p2_dw = p2 - (normal * strokeWeightBrush);
+            tmpStrokeVertices.push_back(
+                VertexPositionColor{ p2_dw, strokeVertices[index + 1].color }
+            );
+        }
+
+        if (loopStroke) {
+            // 線の終端を始端と繋げる
+            tmpStrokeVertices.push_back(tmpStrokeVertices[0]);
+            tmpStrokeVertices.push_back(tmpStrokeVertices[1]);
+        }
+
         m_batch->Draw(
-            D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP_ADJ, 
-            strokeVertices.data(), strokeVertices.size()
+            D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP,
+            tmpStrokeVertices.data(), tmpStrokeVertices.size()
         );
     }
 
