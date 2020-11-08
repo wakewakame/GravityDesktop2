@@ -22,23 +22,21 @@ public:
         if (mouse.lPressed) color = 0xFF0000;
         if (mouse.rPressed) color2 = 0xFF0000;
         if (mouse.mPressed) color = 0x0000FF;
+
+        graph.fill(0x0000FF);
+        graph.rect(50, 250, 150, 350, 5.f);
+
+        graph.fill(color, 128);
+        graph.stroke(color2, 128);
         
-        graph.beginShape(true, 10.f);
-        if (mouse.zDelta) div += mouse.zDelta / 120;
-        if (div < 2) { div = 2; }
-        if (div > 128) { div = 128; }
-        t += 0.1f;
-        for (int i = 0; i < div; i++)
-        {
-            float p = (float)i / (float)div;
-            float theta = t + DirectX::XM_2PI * p;
-            float x = std::cos(theta) * 100.0f + (float)p1.x;
-            float y = std::sin(theta) * 100.0f + (float)p1.y;
-            graph.fill(color, 128);
-            graph.stroke(color2, 128);
-            graph.vertext(x, y);
-        }
-        graph.endShape(true);
+        if (mouse.zDelta) { div += (mouse.zDelta) < 0 ? -1 : 1; }
+        if (div < 3) { div = 3; }
+        if (div > 16) { div = 16; }
+
+        graph.ellipse(p1.x, p1.y, 100.f, 10.f, div);
+
+        graph.fill(0xFFFFFF);
+        graph.rect(10, 200, 100, 300, 10.f);
     }
 };
 

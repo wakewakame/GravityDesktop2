@@ -98,6 +98,7 @@ int gd::Graph::beginShape(bool enableFill, float strokeWeight)
     isEnableFill = enableFill;
     strokeWeightBrush = strokeWeight;
 
+    // 以前の頂点の削除
     if (isEnableFill) { fillIndices.clear(); fillVertices.clear(); }
     if (strokeWeightBrush > 0.f) { strokeVertices.clear(); }
 
@@ -105,14 +106,16 @@ int gd::Graph::beginShape(bool enableFill, float strokeWeight)
     return 0;
 }
 
-void gd::Graph::vertext(float x, float y)
+void gd::Graph::vertex(float x, float y)
 {
+    // 塗りつぶしの頂点の追加
     if (isEnableFill)
     {
         VertexPositionColor v{ Vector3{ x, y, 0.f }, fillBrush };
         fillVertices.push_back(v);
     }
 
+    // 枠線の頂点の追加
     if (strokeWeightBrush > 0.f)
     {
         VertexPositionColor v{ Vector3{ x, y, 0.f }, strokeBrush };
@@ -169,7 +172,6 @@ int gd::Graph::endShape(bool loopStroke)
         // 必要な要素数をあらかじめ確保する
         if (loopStroke) { strokeVertices.push_back(strokeVertices[0]); }
 
-        float tmp = 0.f;
         for (size_t index = 0; index < strokeVertices.size() - 1; index++)
         {
             // 直線の先端と終端の点
@@ -179,7 +181,8 @@ int gd::Graph::endShape(bool loopStroke)
             // 直線の法線の単位ベクトル
             Vector3 normal = p2 - p1;
             normal.Normalize();
-            tmp = normal.x; normal.x = -normal.y; normal.y = tmp;
+            std::swap(normal.x, normal.y);
+            normal.x *= -1.f;
 
             // 生成される直線の先端の上側
             Vector3 p1_up = p1 + (normal * strokeWeightBrush);
@@ -220,5 +223,49 @@ int gd::Graph::endShape(bool loopStroke)
 
     m_batch->End();
 
+    return 0;
+}
+
+int gd::Graph::line(float x1, float y1, float x2, float y2, float weight)
+{
+    if (isShapeBegan) return 1;
+    bool eStrock = ((strokeBrush.w > 0.f) && (weight > 0.f));
+    beginShape(false, eStrock ? weight : 0.f);
+    vertex(x1, y1);
+    vertex(x2, y2);
+    endShape(false);
+    return 0;
+}
+
+int gd::Graph::rect(float x1, float y1, float x2, float y2, float weight)
+{
+    if (isShapeBegan) return 1;
+    bool eFill = (fillBrush.w > 0.f);
+    bool eStrock = ((strokeBrush.w > 0.f) && (weight > 0.f));
+    beginShape(eFill, eStrock ? weight : 0.f);
+    vertex(x1, y1);
+    vertex(x2, y1);
+    vertex(x2, y2);
+    vertex(x1, y2);
+    endShape(true);
+    return 0;
+}
+
+int gd::Graph::ellipse(float x, float y, float r, float weight, uint8_t div)
+{
+    if (isShapeBegan) return 1;
+    if (div <= 1) return 0;
+    bool eFill = (fillBrush.w > 0.f);
+    bool eStrock = ((strokeBrush.w > 0.f) && (weight > 0.f));
+    beginShape(eFill, eStrock ? weight : 0.f);
+    for (int i = 0; i < div; i++)
+    {
+        float p = (float)i / (float)div;
+        float theta = XM_2PI * p;
+        float x_ = x + std::cos(theta) * r;
+        float y_ = y + std::sin(theta) * r;
+        vertex(x_, y_);
+    }
+    endShape(true);
     return 0;
 }

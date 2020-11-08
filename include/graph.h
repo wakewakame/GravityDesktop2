@@ -59,7 +59,7 @@ namespace gd
 		 * 図形に頂点を追加する
 		 * @param x, y 追加する頂点の画面上の座標
 		 */
-		void vertext(float x, float y);
+		void vertex(float x, float y);
 
 		/**
 		 * 図形の作成を終了し、画面上に図形を描画する
@@ -67,6 +67,12 @@ namespace gd
 		 * @return 描画に成功すると1が返り、失敗すると0が返る
 		 */
 		int endShape(bool loopStroke = false);
+
+		int line(float x1, float y1, float x2, float y2, float weight = 1.f);
+
+		int rect(float x1, float y1, float x2, float y2, float weight = 1.f);
+
+		int ellipse(float x, float y, float r, float weight = 1.f, uint8_t div = 32);
 
 	private:
 		Microsoft::WRL::ComPtr<ID3D11DeviceContext> m_d3dContext;
