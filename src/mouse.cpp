@@ -22,7 +22,6 @@ void gd::MouseProcess::OnWindowMessage(HWND hWnd, UINT message, WPARAM wParam, L
 
 	case WM_LBUTTONDBLCLK:
 		aLDouble = true;
-
 	case WM_LBUTTONDOWN:
 		// ドラッグ時に画面外へマウスが移動してもキャプチャを続ける
 		if (setMouseCapture(hWnd))
@@ -34,7 +33,6 @@ void gd::MouseProcess::OnWindowMessage(HWND hWnd, UINT message, WPARAM wParam, L
 
 	case WM_RBUTTONDBLCLK:
 		aRDouble = true;
-
 	case WM_RBUTTONDOWN:
 		// ドラッグ時に画面外へマウスが移動してもキャプチャを続ける
 		if (setMouseCapture(hWnd))
@@ -46,7 +44,6 @@ void gd::MouseProcess::OnWindowMessage(HWND hWnd, UINT message, WPARAM wParam, L
 
 	case WM_MBUTTONDBLCLK:
 		aMDouble = true;
-
 	case WM_MBUTTONDOWN:
 		// ドラッグ時に画面外へマウスが移動してもキャプチャを続ける
 		if (setMouseCapture(hWnd))
@@ -69,6 +66,10 @@ void gd::MouseProcess::OnWindowMessage(HWND hWnd, UINT message, WPARAM wParam, L
 	case WM_MBUTTONUP:
 		// マウスのキャプチャを終了して、aLPressed、aRPressed、aMPressedにfalseを設定する
 		releaseMouseCapture();
+		break;
+
+	case WM_MOUSEWHEEL:
+		aZDelta += GET_WHEEL_DELTA_WPARAM(wParam);
 		break;
 	}
 }
@@ -101,6 +102,9 @@ void gd::MouseProcess::nextFrame()
 
 	bMDouble = aMDouble;
 	aMDouble = false;
+
+	bZDelta = aZDelta;
+	aZDelta = 0;
 }
 
 gd::Mouse gd::MouseProcess::getMouseStatus()
@@ -126,6 +130,8 @@ gd::Mouse gd::MouseProcess::getMouseStatus()
 	mouse.lDouble = bLDouble;
 	mouse.rDouble = bRDouble;
 	mouse.mDouble = bMDouble;
+
+	mouse.zDelta = bZDelta;
 
 	return mouse;
 }

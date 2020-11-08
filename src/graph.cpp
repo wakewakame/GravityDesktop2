@@ -5,6 +5,21 @@
 using namespace DirectX;
 using namespace DirectX::SimpleMath;
 
+XMFLOAT4 gd::color() { return DirectX::XMFLOAT4{ 0.f, 0.f, 0.f, 1.f }; }
+XMFLOAT4 gd::color(uint32_t rgb, uint8_t a)
+{
+	return DirectX::XMFLOAT4{
+		(float)((rgb & 0xFF0000) >> 16),
+		(float)((rgb & 0x00FF00) >> 8),
+		(float)((rgb & 0x0000FF) >> 0),
+		(float)a
+	};
+}
+XMFLOAT4 gd::color(float r, float g, float b, float a)
+{
+	return DirectX::XMFLOAT4{ r, g, b, a };
+}
+
 gd::Graph::Graph() : m_d3dContext(nullptr)
 {
 
@@ -61,8 +76,51 @@ void gd::Graph::OnDeviceLost()
     m_inputLayout.Reset();
 }
 
-void gd::Graph::Line(const POINTS p1, const POINTS p2, const Color color)
+void gd::Graph::fill(Color c)
 {
+    fillBrush = c;
+}
+
+void gd::Graph::stroke(Color c)
+{
+    strokeBrush = c;
+}
+
+void gd::Graph::strokeWeight(float weight)
+{
+    strokeWeightBrush = weight;
+}
+
+int gd::Graph::beginShape(bool enableFill, bool enableStroke)
+{
+    if (isShapeBegan) return 1;
+
+    isEnableFill = enableFill;
+    isEnableStroke = enableStroke;
+
+    if (isEnableFill) { fillIndices.clear(); fillVertices.clear(); }
+    if (isEnableStroke) { strokeVertices.clear(); }
+
+    isShapeBegan = true;
+    return 0;
+}
+
+void gd::Graph::vertext(float x, float y)
+{
+    if (isEnableFill)
+    {
+        VertexPositionColor v{ Vector3{ x, y, 0.f }, fillBrush };
+        fillVertices.push_back(v);
+    }
+}
+
+int gd::Graph::endShape(bool loopStroke)
+{
+    if (!isShapeBegan) return 1;
+    isShapeBegan = false;
+
+    if ((!isEnableFill) && (!isEnableStroke)) return 0;
+
     m_d3dContext->OMSetBlendState(m_states->Opaque(), nullptr, 0xFFFFFFFF);
     m_d3dContext->OMSetDepthStencilState(m_states->DepthNone(), 0);
     m_d3dContext->RSSetState(m_states->CullNone());
@@ -73,13 +131,36 @@ void gd::Graph::Line(const POINTS p1, const POINTS p2, const Color color)
 
     m_batch->Begin();
 
-    Vector3 a_vec{ (float)p1.x, (float)p1.y, 0.f };
-    Vector3 b_vec{ (float)p2.x, (float)p2.y, 0.f };
+    if (isEnableFill)
+    {
+        // TRIANGLESTRIPで塗りつぶしを行うので、頂点のインデックスを指定する必要がある
+        // たとえば、頂点が10個の場合は次のようにインデックスを振る (左: 頂点の追加順, 右: 頂点のインデックス)
+        // 0123456789 => 0918273645
+        uint16_t size = fillVertices.size();
+        fillIndices.reserve(fillVertices.size());
+        for (uint16_t index = 0; index < size; index++)
+        {
+            //uint16_t strip_index = (size + ((index + 1) / 2) * (1 - (index & 1) * 2)) % size;
+            uint16_t strip_index = (index & 0b1) ? (size - (index / 2) - 1) : (index / 2);
+            fillIndices.push_back(strip_index);
+        }
 
-    m_batch->DrawLine(
-        VertexPositionColor(a_vec, color.toXMFLOAT4()),
-        VertexPositionColor(b_vec, color.toXMFLOAT4())
-    );
+        m_batch->DrawIndexed(
+            D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP,
+            fillIndices.data(), fillIndices.size(),
+            fillVertices.data(), fillVertices.size()
+        );
+    }
+
+    if (isEnableStroke)
+    {
+        m_batch->Draw(
+            D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP_ADJ, 
+            strokeVertices.data(), strokeVertices.size()
+        );
+    }
 
     m_batch->End();
+
+    return 0;
 }

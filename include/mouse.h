@@ -30,6 +30,8 @@ namespace gd
 		bool rDouble = false;    // 現在のフレームの右ダブルクリック
 
 		bool mDouble = false;    // 現在のフレームの中央ダブルクリック
+
+		int zDelta = 0;          // 現在のフレームのホイールの回転数
 	};
 
 	class MouseProcess
@@ -84,6 +86,9 @@ namespace gd
 
 		bool aMDouble = false;   // 最新の中央ダブルクリック
 		bool bMDouble = false;   // 現在のフレームの中央ダブルクリック
+
+		int aZDelta = 0;         // 最新のフレームの回転数
+		int bZDelta = 0;         // 現在のフレームの回転数
 
 		bool isCaptured = false;
 
