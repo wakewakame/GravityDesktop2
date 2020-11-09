@@ -4,6 +4,27 @@
 
 namespace gd
 {
+	enum class BlendMode : uint8_t
+	{
+		Opaque,      // 不透明 (α値を無視する)
+		AlphaBlend,  // アルファブレンド
+		Additive,    // 加算合成
+	};
+
+	enum class DepthMode : uint8_t
+	{
+		DepthNone,     // Zバッファを使用しない (描画順序をソートしない)
+		DepthDefault,  // Zバッファを使用する (描画順序をカメラの近さでソートする)
+	};
+
+	enum class RasterizerMode : uint8_t
+	{
+		CullNone,              // ポリゴンを両面描画する
+		CullClockwise,         // ポリゴンを片面描画する
+		CullCounterClockwise,  // ポリゴンを片面描画する (CullClockwiseの逆の面)
+		Wireframe              // ポリゴンをワイヤーフレームで描画する
+	};
+
 	class Graph
 	{
 	public:
@@ -67,6 +88,18 @@ namespace gd
 		 * @return 描画に成功すると1が返り、失敗すると0が返る
 		 */
 		int endShape(bool loopStroke = false);
+		
+		/**
+		 * 描画モードを変更します
+		 * @param blend 合成モードの指定
+		 * @param depth 描画順序のソート方法の指定
+		 * @param rasterizer 面の描画方法の指定
+		 */
+		void setRenderMode(
+			BlendMode blend = BlendMode::AlphaBlend,
+			DepthMode depth = DepthMode::DepthNone,
+			RasterizerMode rasterizer = RasterizerMode::CullNone
+		);
 
 		int line(float x1, float y1, float x2, float y2, float weight = 1.f);
 

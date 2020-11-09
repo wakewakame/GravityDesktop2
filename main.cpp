@@ -1,11 +1,20 @@
 #include "dx_windows.h"
 #include "component.h"
 
+using namespace gd;
+
 class CustomComponent : public gd::RootComponent
 {
 public:
     float t = 0.f;
-    void init(gd::Graph& graph) {}
+    void init(gd::Graph& graph) {
+        graph.setRenderMode(
+            BlendMode::AlphaBlend,
+            DepthMode::DepthNone,
+            //RasterizerMode::Wireframe
+            RasterizerMode::CullNone
+        );
+    }
     void render(gd::Graph& graph, gd::Mouse& mouse) override
     {
         auto p1 = mouse.point;

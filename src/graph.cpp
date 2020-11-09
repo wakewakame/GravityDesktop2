@@ -42,14 +42,16 @@ void gd::Graph::CreateDevice(Microsoft::WRL::ComPtr<ID3D11DeviceContext>& d3dCon
             m_inputLayout.ReleaseAndGetAddressOf()));
 
     m_batch = std::make_unique<PrimitiveBatch<VertexPositionColor>>(m_d3dContext.Get());
+
+    setRenderMode(BlendMode::AlphaBlend, DepthMode::DepthNone, RasterizerMode::CullNone);
 }
 
 void gd::Graph::CreateResources(const UINT backBufferWidth, const UINT backBufferHeight)
 {
+    // 画面サイズに合わせてプロジェクション行列を計算し直す
     m_proj = Matrix::CreateOrthographicOffCenter(
         0.f, float(backBufferWidth), float(backBufferHeight), 0.f, -1.f, 1.f
     );
-
     m_effect->SetProjection(m_proj);
 }
 
@@ -129,11 +131,6 @@ int gd::Graph::endShape(bool loopStroke)
     isShapeBegan = false;
 
     if ((!isEnableFill) && (strokeWeightBrush <= 0.f)) return 0;
-
-    float blendFactor[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
-    m_d3dContext->OMSetBlendState(m_states->NonPremultiplied(), blendFactor, 0xFFFFFFFF);
-    m_d3dContext->OMSetDepthStencilState(m_states->DepthNone(), 0);
-    m_d3dContext->RSSetState(m_states->CullNone());
 
     m_effect->Apply(m_d3dContext.Get());
 
@@ -226,6 +223,29 @@ int gd::Graph::endShape(bool loopStroke)
     m_batch->End();
 
     return 0;
+}
+
+void gd::Graph::setRenderMode(BlendMode blend, DepthMode depth, RasterizerMode rasterizer)
+{
+    ID3D11BlendState* blendState =
+        (BlendMode::Opaque   == blend) ? m_states->Opaque()   :  // 上書き
+        (BlendMode::Additive == blend) ? m_states->Additive() :  // 加算合成
+        m_states->NonPremultiplied();                            // アルファブレンド
+
+    ID3D11DepthStencilState* depthState =
+        (DepthMode::DepthDefault == depth) ? m_states->DepthDefault() :  // Zバッファを使用する
+        m_states->DepthNone();                                           // Zバッファを使用しない
+
+    ID3D11RasterizerState* rasterozerState =
+        (RasterizerMode::CullClockwise == rasterizer) ? m_states->CullClockwise() :
+        (RasterizerMode::CullCounterClockwise == rasterizer) ? m_states->CullCounterClockwise() :
+        (RasterizerMode::Wireframe == rasterizer) ? m_states->Wireframe() :
+        m_states->CullNone();
+
+    float blendFactor[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+    m_d3dContext->OMSetBlendState(blendState, blendFactor, 0xFFFFFFFF);
+    m_d3dContext->OMSetDepthStencilState(depthState, 0);
+    m_d3dContext->RSSetState(rasterozerState);
 }
 
 int gd::Graph::line(float x1, float y1, float x2, float y2, float weight)
