@@ -1,36 +1,44 @@
 #include "dx_windows.h"
 #include "component.h"
+#include "math_utils.h"
 
 using namespace gd;
 
 class CustomComponent : public gd::RootComponent
 {
 public:
-    float t = 0.f;
+    bool a;
+    int scale = 60;
     void init(gd::Graph& graph) {
         graph.setRenderMode(
             BlendMode::AlphaBlend,
             DepthMode::DepthNone,
-            //RasterizerMode::Wireframe
-            RasterizerMode::CullNone
+            RasterizerMode::Wireframe
+            //RasterizerMode::CullNone
         );
     }
-    void render(gd::Graph& graph, gd::Mouse& mouse) override
+    void render(gd::Graph& g, gd::Mouse& mouse) override
     {
-        auto p1 = mouse.point;
-        float c = .5f + .5f * std::sin(t+=0.01);
+        auto m = mouse.point;
 
-        graph.fill(0x000000, 128);
-        graph.rect(50, 250, 150, 350, 5.f);
+        //if (!mouse.lPressed) { m.x = m.x < 320 ? 320 : m.x; }
+        if (mouse.lDouble) { a = !a; g.setRenderMode(
+            BlendMode::AlphaBlend,
+            DepthMode::DepthNone,
+            a ? RasterizerMode::Wireframe : RasterizerMode::CullNone
+        ); }
 
-        graph.fill(c, c, c, .0f);
-        graph.ellipse(p1.x - 100.f, p1.y, 100.f, 10.f, 32);
+        scale += 5 * mouse.zDelta / 120;
 
-        graph.fill(c, c, c, .5f);
-        graph.ellipse(p1.x, p1.y, 100.f, 10.f, 32);
+        Vector3 hoge;
 
-        graph.fill(c, c, c, 1.f);
-        graph.ellipse(p1.x + 100.f, p1.y, 100.f, 10.f, 32);
+        g.stroke(0x000000, 128);
+        g.beginShape(false, scale);
+        g.vertex(0, 240);
+        g.vertex(320, 240);
+        //g.vertex(320, 240);
+        g.vertex(m.x, m.y);
+        g.endShape(false);
     }
 };
 
@@ -41,7 +49,6 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
     gd::Windows windows{ hInstance, nCmdShow };
 
     CustomComponent component;
-    ret = windows.create<CustomComponent>();
     ret = windows.create<CustomComponent>();
     if (ret) return 1;
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "graph.h"
+#include "math_utils.h"
 
 using namespace DirectX;
 using namespace DirectX::SimpleMath;
@@ -171,40 +172,83 @@ int gd::Graph::endShape(bool loopStroke)
         // 必要な要素数をあらかじめ確保する
         if (loopStroke) { strokeVertices.push_back(strokeVertices[0]); }
 
-        for (size_t index = 0; index < strokeVertices.size() - 1; index++)
+        {
+            // 直線の先端と終端の点
+            const Vector3 p1 = strokeVertices[0].position;
+            const Vector3 p2 = strokeVertices[1].position;
+            // p1からp2までの直線をx軸としたときの基底ベクトルを求める
+            auto axes = getXYLocalAxes(p2 - p1, strokeWeightBrush);
+            // 太線を長方形として、上の辺と下の辺を計算する
+            XYLine top{ p1 + axes.vecY - axes.vecX, p2 + axes.vecY + axes.vecX };
+            XYLine bottom{ p1 - axes.vecY - axes.vecX, p2 - axes.vecY + axes.vecX };
+            // 頂点の追加
+            tmpStrokeVertices.push_back(
+                VertexPositionColor{ top.start, strokeVertices[0].color }
+            );
+            tmpStrokeVertices.push_back(
+                VertexPositionColor{ bottom.start, strokeVertices[0].color }
+            );
+        }
+
+        for (size_t index = 0; index < strokeVertices.size() - 2; index++)
         {
             // 直線の先端と終端の点
             const Vector3 p1 = strokeVertices[index].position;
             const Vector3 p2 = strokeVertices[index + 1].position;
-
-            // 直線の法線の単位ベクトル
-            Vector3 normal = p2 - p1;
-            normal.Normalize();
-            std::swap(normal.x, normal.y);
-            normal.x *= -1.f;
-
-            // 生成される直線の先端の上側
-            Vector3 p1_up = p1 + (normal * strokeWeightBrush);
+            const Vector3 p3 = strokeVertices[index + 2].position;
+            // p1からp2までの直線をx軸としたときの基底ベクトルを求める
+            const Vector3 line1 = p2 - p1, line2 = p3 - p2;
+            auto axes1 = getXYLocalAxes(line1, strokeWeightBrush);
+            auto axes2 = getXYLocalAxes(line2, strokeWeightBrush);
+            // 太線を長方形として、上の辺と下の辺を計算する
+            XYLine top1   { p1 + axes1.vecY - axes1.vecX, p2 + axes1.vecY };
+            XYLine bottom1{ p1 - axes1.vecY - axes1.vecX, p2 - axes1.vecY };
+            XYLine top2   { p2 + axes2.vecY, p3 + axes2.vecY + axes2.vecX };
+            XYLine bottom2{ p2 - axes2.vecY, p3 - axes2.vecY + axes2.vecX };
+            // line1とline2の外積のzの値 (line2がline1の直線よりaxes1.vecY側に傾いていればzが正になる)
+            const float z = (line1.x * line2.y) - (line2.x * line1.y);
+            // line1とline2が並行ではない場合
+            bool hoge = false;
+            if (z != 0.f) {
+                if (z > 0.f) { bottom1.end += axes1.vecX; bottom2.start -= axes2.vecX; }
+                if (z < 0.f) { top1.end += axes1.vecX; top2.start -= axes2.vecX; }
+                auto topCross = getXYCrossPoint(top1, top2);
+                auto bottomCross = getXYCrossPoint(bottom1, bottom2);
+                if (2 == topCross.first) { top1.end = top2.start = topCross.second; }
+                if (2 == bottomCross.first) { bottom1.end = bottom2.start = bottomCross.second; }
+                if ((1 == topCross.first) && (z > 0.f)) { top2.start = top1.end; hoge = true; }
+                if ((1 == bottomCross.first) && (z < 0.f)) { bottom2.start = bottom1.end; }
+            }
             tmpStrokeVertices.push_back(
-                VertexPositionColor{ p1_up, strokeVertices[index].color }
+                VertexPositionColor{ top1.end, strokeVertices[index].color }
             );
-
-            // 生成される直線の先端の下側
-            Vector3 p1_dw = p1 - (normal * strokeWeightBrush);
             tmpStrokeVertices.push_back(
-                VertexPositionColor{ p1_dw, strokeVertices[index].color }
+                VertexPositionColor{ bottom1.end, strokeVertices[index].color }
             );
-
-            // 生成される直線の終端の上側
-            Vector3 p2_up = p2 + (normal * strokeWeightBrush);
+            if (!hoge)
             tmpStrokeVertices.push_back(
-                VertexPositionColor{ p2_up, strokeVertices[index + 1].color }
+                VertexPositionColor{ top2.start, strokeVertices[index].color }
             );
-
-            // 生成される直線の終端の上側
-            Vector3 p2_dw = p2 - (normal * strokeWeightBrush);
             tmpStrokeVertices.push_back(
-                VertexPositionColor{ p2_dw, strokeVertices[index + 1].color }
+                VertexPositionColor{ bottom2.start, strokeVertices[index].color }
+            );
+        }
+
+        {
+            // 直線の先端と終端の点
+            const Vector3 p1 = strokeVertices[strokeVertices.size() - 2].position;
+            const Vector3 p2 = strokeVertices[strokeVertices.size() - 1].position;
+            // p1からp2までの直線をx軸としたときの基底ベクトルを求める
+            auto axes = getXYLocalAxes(p2 - p1, strokeWeightBrush);
+            // 太線を長方形として、上の辺と下の辺を計算する
+            XYLine top{ p1 + axes.vecY - axes.vecX, p2 + axes.vecY + axes.vecX };
+            XYLine bottom{ p1 - axes.vecY - axes.vecX, p2 - axes.vecY + axes.vecX };
+            // 頂点の追加
+            tmpStrokeVertices.push_back(
+                VertexPositionColor{ top.end, strokeVertices[strokeVertices.size() - 1].color }
+            );
+            tmpStrokeVertices.push_back(
+                VertexPositionColor{ bottom.end, strokeVertices[strokeVertices.size() - 1].color }
             );
         }
 
