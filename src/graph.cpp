@@ -64,10 +64,10 @@ void gd::Graph::OnDeviceLost()
 void gd::Graph::fill(uint32_t rgb, uint8_t a)
 {
     fill(
-        (float)((rgb & 0xFF0000) >> 16),
-        (float)((rgb & 0x00FF00) >> 8),
-        (float)((rgb & 0x0000FF) >> 0),
-        (float)a
+        ((float)((rgb & 0xFF0000) >> 16)) / 255.f,
+        ((float)((rgb & 0x00FF00) >> 8)) / 255.f,
+        ((float)((rgb & 0x0000FF) >> 0)) / 255.f,
+        ((float)a) / 255.f
     );
 }
 
@@ -79,10 +79,10 @@ void gd::Graph::fill(float r, float g, float b, float a)
 void gd::Graph::stroke(uint32_t rgb, uint8_t a)
 {
     stroke(
-        (float)((rgb & 0xFF0000) >> 16),
-        (float)((rgb & 0x00FF00) >> 8),
-        (float)((rgb & 0x0000FF) >> 0),
-        (float)a
+        ((float)((rgb & 0xFF0000) >> 16)) / 255.f,
+        ((float)((rgb & 0x00FF00) >> 8)) / 255.f,
+        ((float)((rgb & 0x0000FF) >> 0)) / 255.f,
+        ((float)a) / 255.f
     );
 }
 
@@ -130,6 +130,8 @@ int gd::Graph::endShape(bool loopStroke)
 
     if ((!isEnableFill) && (strokeWeightBrush <= 0.f)) return 0;
 
+    float blendFactor[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+    m_d3dContext->OMSetBlendState(m_states->NonPremultiplied(), blendFactor, 0xFFFFFFFF);
     m_d3dContext->OMSetDepthStencilState(m_states->DepthNone(), 0);
     m_d3dContext->RSSetState(m_states->CullNone());
 
