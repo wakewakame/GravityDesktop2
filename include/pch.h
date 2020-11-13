@@ -1,4 +1,4 @@
-//
+﻿//
 // pch.h
 // Header for standard system include files.
 //
@@ -6,7 +6,7 @@
 #pragma once
 
 #include <winsdkver.h>
-#define _WIN32_WINNT 0x0601
+//#define _WIN32_WINNT 0x0601  // これはCMakeで定義してあるので、コメントアウトしておく
 #include <sdkddkver.h>
 
 // Use the C++ standard templated min/max

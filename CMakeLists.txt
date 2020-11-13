@@ -10,8 +10,8 @@ add_subdirectory(${LIBRARIES_PATH}/hook)
 add_subdirectory(${LIBRARIES_PATH}/DirectXTK)
 add_subdirectory(${LIBRARIES_PATH}/box2d)
 
-# C++14を使用する
-set(CMAKE_CXX_STANDARD 14)
+# C++17を使用する
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
