@@ -7,9 +7,7 @@ namespace gd
 	class Capture
 	{
 	private:
-		Microsoft::WRL::ComPtr<ID3D11DeviceContext> m_d3dContext;
 		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> shaderResourceView;
-		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> shaderResourceViewBackup;
 
 		// ウィンドウをキャプチャする関数
 		using DwmGetDxSharedSurface = BOOL(WINAPI*)(HWND, HANDLE*, UINT64*, DXGI_FORMAT*, DWORD*, UINT64*);
@@ -17,13 +15,9 @@ namespace gd
 	public:
 		bool start(Microsoft::WRL::ComPtr<ID3D11DeviceContext>& d3dContext, HWND target)
 		{
-			// ID3D11DeviceContextのポインタを持っておく
-			// (ComPtrの代入演算子は参照カウントをインクリメントして、ポインタの所有権を共有する)
-			m_d3dContext = d3dContext;
-
 			// ID3D11Deviceを取得する
 			Microsoft::WRL::ComPtr<ID3D11Device> m_d3dDevice;
-			m_d3dContext->GetDevice(&m_d3dDevice);
+			d3dContext->GetDevice(&m_d3dDevice);
 
 			// ウィンドウの表面への共有ハンドル
 			HANDLE phSurface;
@@ -38,6 +32,15 @@ namespace gd
 			DX::ThrowIfFailed(dxgiAdapter->GetDesc(&desc));
 			adapterLuid = desc.AdapterLuid.HighPart; adapterLuid <<= 32;
 			adapterLuid |= desc.AdapterLuid.LowPart;
+
+
+			/*
+			メモ
+			dllの読み込みには通常LoadLibrary()でハンドルを取得し、使い終わったらFreeLibrary()でハンドルを解放する。
+			しかし、user32.dllはウィンドウの生成に必要なので、プログラムの起動時には既にuser32.dllは読み込まれているはずである。
+			そのため、ここではuser32.dllのハンドルの取得にはGetModuleHandleWを使用した。
+			また、このハンドルは自分でLoadLibrary()して生成したハンドルではないため、FreeLibrary()する必要はない。
+			*/
 
 			// DwmGetDxSharedSurface関数の取得
 			static HMODULE user32dll = GetModuleHandleW(L"user32.dll");
@@ -70,18 +73,8 @@ namespace gd
 			Microsoft::WRL::ComPtr<ID3D11Texture2D> renderTarget;
 			DX::ThrowIfFailed(resource->QueryInterface(IID_PPV_ARGS(&renderTarget)));
 
-			// テクスチャのバックアップ生成
-			D3D11_TEXTURE2D_DESC renderTargetDesk;
-			renderTarget->GetDesc(&renderTargetDesk);
-			Microsoft::WRL::ComPtr<ID3D11Texture2D> renderTargetBackup;
-			m_d3dDevice->CreateTexture2D(&renderTargetDesk, NULL, &renderTargetBackup);
-			m_d3dContext->CopyResource(renderTargetBackup.Get(), renderTarget.Get());
-
 			// シェーダリソースビューの生成
 			DX::ThrowIfFailed(m_d3dDevice->CreateShaderResourceView(renderTarget.Get(), NULL, &shaderResourceView));
-
-			// バックアップシェーダリソースビューの生成
-			DX::ThrowIfFailed(m_d3dDevice->CreateShaderResourceView(renderTargetBackup.Get(), NULL, &shaderResourceViewBackup));
 
 			// 処理終了
 			return 0;
@@ -90,11 +83,6 @@ namespace gd
 		inline Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>& getImage()
 		{
 			return shaderResourceView;
-		}
-
-		inline Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>& getBackupImage()
-		{
-			return shaderResourceViewBackup;
 		}
 	};
 }

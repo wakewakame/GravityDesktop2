@@ -259,10 +259,17 @@ void gd::Window::OnWindowSizeChanged(int width, int height)
 void gd::Window::CreateDevice()
 {
     /*
-    メモ
+    メモ1
     _DEBUGはDebugビルド時に定#defineされる
     NDEBUFはReleaseビルド時に#defineされる
     _DEBUGはVCの独自拡張で、NDEBUFはC言語標準
+    */
+
+    /*
+    メモ2
+    ComPtr<T>::operator&() は ComPtr<T>::ReleaseAndGetAddressOf() とだいたい同じ挙動をする。
+    具体的には、自身が持っていたポインタの参照カウンタをデクリメントし、新たに「参照カウントが1のnullptr」を保持するようになる。
+    そのため、このnullptrを好きな値に書き換えることで、新たなポインタをComPtrで管理することができるようになる。
     */
 
     // ID3D11DeviceとID3D11DeviceContextの作成
