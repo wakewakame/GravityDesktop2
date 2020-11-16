@@ -285,9 +285,9 @@ void gd::Window::CreateDevice()
         featureLevels,                   // 作成を試みる機能レベルの順序を決定するD3D_FEATURE_LEVELの配列へのポインター
         _countof(featureLevels),         // featureLevelsの要素数
         D3D11_SDK_VERSION,               // SDKバージョン
-        device.ReleaseAndGetAddressOf(), // 作成されたデバイスを表すID3D11Deviceオブジェクトへのポインタ
+        &device,                         // 作成されたデバイスを表すID3D11Deviceオブジェクトへのポインタ
         &featureLevel,                   // featureLevelsの中で作成に使用された値がfeatureLevelに代入される
-        context.ReleaseAndGetAddressOf() // デバイスコンテキストを表すID3D11DeviceContextオブジェクトへのポインタ
+        &context                         // デバイスコンテキストを表すID3D11DeviceContextオブジェクトへのポインタ
     ));
 
 #ifndef NDEBUG
@@ -331,9 +331,7 @@ void gd::Window::CreateDevice()
 // Allocate all memory resources that change on a window SizeChanged event.
 void gd::Window::CreateResources()
 {
-    // Clear the previous window size specific context.
-    ID3D11RenderTargetView* nullViews[] = { nullptr };
-    m_d3dContext->OMSetRenderTargets(_countof(nullViews), nullViews, nullptr);
+    m_d3dContext->OMSetRenderTargets(0, nullptr, nullptr);
     m_renderTargetView.Reset();
     m_depthStencilView.Reset();
     m_d3dContext->Flush();
@@ -371,11 +369,11 @@ void gd::Window::CreateResources()
 
         // Identify the physical adapter (GPU or card) this device is running on.
         ComPtr<IDXGIAdapter> dxgiAdapter;
-        DX::ThrowIfFailed(dxgiDevice->GetAdapter(dxgiAdapter.GetAddressOf()));
+        DX::ThrowIfFailed(dxgiDevice->GetAdapter(&dxgiAdapter));
 
         // And obtain the factory object that created it.
         ComPtr<IDXGIFactory2> dxgiFactory;
-        DX::ThrowIfFailed(dxgiAdapter->GetParent(IID_PPV_ARGS(dxgiFactory.GetAddressOf())));
+        DX::ThrowIfFailed(dxgiAdapter->GetParent(IID_PPV_ARGS(&dxgiFactory)));
 
         // Create a descriptor for the swap chain.
         DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
@@ -397,7 +395,7 @@ void gd::Window::CreateResources()
             &swapChainDesc,
             &fsSwapChainDesc,
             nullptr,
-            m_swapChain.ReleaseAndGetAddressOf()
+            &m_swapChain
         ));
 
         // This template does not support exclusive fullscreen mode and prevents DXGI from responding to the ALT+ENTER shortcut.
@@ -406,20 +404,20 @@ void gd::Window::CreateResources()
 
     // Obtain the backbuffer for this window which will be the final 3D rendertarget.
     ComPtr<ID3D11Texture2D> backBuffer;
-    DX::ThrowIfFailed(m_swapChain->GetBuffer(0, IID_PPV_ARGS(backBuffer.GetAddressOf())));
+    DX::ThrowIfFailed(m_swapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer)));
 
     // Create a view interface on the rendertarget to use on bind.
-    DX::ThrowIfFailed(m_d3dDevice->CreateRenderTargetView(backBuffer.Get(), nullptr, m_renderTargetView.ReleaseAndGetAddressOf()));
+    DX::ThrowIfFailed(m_d3dDevice->CreateRenderTargetView(backBuffer.Get(), nullptr, &m_renderTargetView));
 
     // Allocate a 2-D surface as the depth/stencil buffer and
     // create a DepthStencil view on this surface to use on bind.
     CD3D11_TEXTURE2D_DESC depthStencilDesc(depthBufferFormat, backBufferWidth, backBufferHeight, 1, 1, D3D11_BIND_DEPTH_STENCIL);
 
     ComPtr<ID3D11Texture2D> depthStencil;
-    DX::ThrowIfFailed(m_d3dDevice->CreateTexture2D(&depthStencilDesc, nullptr, depthStencil.GetAddressOf()));
+    DX::ThrowIfFailed(m_d3dDevice->CreateTexture2D(&depthStencilDesc, nullptr, &depthStencil));
 
     CD3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc(D3D11_DSV_DIMENSION_TEXTURE2D);
-    DX::ThrowIfFailed(m_d3dDevice->CreateDepthStencilView(depthStencil.Get(), &depthStencilViewDesc, m_depthStencilView.ReleaseAndGetAddressOf()));
+    DX::ThrowIfFailed(m_d3dDevice->CreateDepthStencilView(depthStencil.Get(), &depthStencilViewDesc, &m_depthStencilView));
 
     // TODO: Initialize windows-size dependent objects here.
     graph.CreateResources(backBufferWidth, backBufferHeight);

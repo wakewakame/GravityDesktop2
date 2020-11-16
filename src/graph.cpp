@@ -22,12 +22,12 @@ void gd::Graph::CreateDevice(Microsoft::WRL::ComPtr<ID3D11DeviceContext>& d3dCon
     m_d3dContext = d3dContext;
 
     // ID3D11Device‚ðŽæ“¾‚·‚é
-    ID3D11Device* m_d3dDevice;
+    Microsoft::WRL::ComPtr<ID3D11Device> m_d3dDevice;
     m_d3dContext->GetDevice(&m_d3dDevice);
 
-    m_states = std::make_unique<CommonStates>(m_d3dDevice);
+    m_states = std::make_unique<CommonStates>(m_d3dDevice.Get());
 
-    m_effect = std::make_unique<BasicEffect>(m_d3dDevice);
+    m_effect = std::make_unique<BasicEffect>(m_d3dDevice.Get());
     m_effect->SetVertexColorEnabled(true);
 
     void const* shaderByteCode;

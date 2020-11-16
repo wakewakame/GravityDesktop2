@@ -1,5 +1,6 @@
 #include "dx_windows.h"
 #include "component.h"
+#include "capture.h"
 
 using namespace gd;
 
