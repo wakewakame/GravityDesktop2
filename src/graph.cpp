@@ -41,7 +41,8 @@ void gd::Graph::CreateDevice(Microsoft::WRL::ComPtr<ID3D11DeviceContext>& d3dCon
             shaderByteCode, byteCodeLength,
             m_inputLayout.ReleaseAndGetAddressOf()));
 
-    m_batch = std::make_unique<PrimitiveBatch<VertexPositionColor>>(m_d3dContext.Get());
+    m_primitiveBatch = std::make_unique<PrimitiveBatch<VertexPositionColor>>(m_d3dContext.Get());
+    m_spriteBatch = std::make_unique<SpriteBatch>(m_d3dContext.Get());
 
     setRenderMode(BlendMode::AlphaBlend, DepthMode::DepthNone, RasterizerMode::CullNone);
 }
@@ -59,7 +60,8 @@ void gd::Graph::OnDeviceLost()
 {
     m_states.reset();
     m_effect.reset();
-    m_batch.reset();
+    m_primitiveBatch.reset();
+    m_spriteBatch.reset();
     m_inputLayout.Reset();
 }
 
@@ -136,7 +138,7 @@ int gd::Graph::endShape(bool loopStroke)
 
     m_d3dContext->IASetInputLayout(m_inputLayout.Get());
 
-    m_batch->Begin();
+    m_primitiveBatch->Begin();
 
     // ’¸“_”‚ª2ˆÈ‰º‚¾‚Æ•`‰æ‚µ‚È‚¢‚Ì‚Æ“¯‚¶‚Å‚ ‚é‚½‚ßA’¸“_”‚ª3ˆÈã‚Å•`‰æ
     if (fillVertices.size() >= 3)
@@ -152,7 +154,7 @@ int gd::Graph::endShape(bool loopStroke)
             fillIndices.push_back(strip_index);
         }
 
-        m_batch->DrawIndexed(
+        m_primitiveBatch->DrawIndexed(
             D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP,
             fillIndices.data(), fillIndices.size(),
             fillVertices.data(), fillVertices.size()
@@ -214,13 +216,13 @@ int gd::Graph::endShape(bool loopStroke)
             tmpStrokeVertices.push_back(tmpStrokeVertices[1]);
         }
 
-        m_batch->Draw(
+        m_primitiveBatch->Draw(
             D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP,
             tmpStrokeVertices.data(), tmpStrokeVertices.size()
         );
     }
 
-    m_batch->End();
+    m_primitiveBatch->End();
 
     return 0;
 }
@@ -289,5 +291,16 @@ int gd::Graph::ellipse(float x, float y, float r, float weight, uint8_t div)
         vertex(x_, y_);
     }
     endShape(true);
+    return 0;
+}
+
+int gd::Graph::image(Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>& const texture)
+{
+    m_spriteBatch->Begin();
+    m_spriteBatch->Draw(
+        texture.Get(),
+        XMFLOAT2{ 0.0, 0.0 }
+    );
+    m_spriteBatch->End();
     return 0;
 }

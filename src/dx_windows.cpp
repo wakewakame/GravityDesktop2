@@ -18,11 +18,6 @@ gd::Windows::Windows(HINSTANCE hInstance, int nCmdShow) : hInstance(hInstance), 
 
     // DirectXMathライブラリが使用可能かを確認する
     if (!XMVerifyCPUSupport()) { error(L"このPCではDirectXMathが利用できません。"); }
-
-    // 現在のスレッドでCOMライブラリを使用することを宣言する
-    HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
-
-    if (FAILED(hr)) { error(L"COMライブラリの初期化に失敗しました。"); }
 }
 
 gd::Windows::~Windows()
@@ -50,9 +45,6 @@ gd::Windows::~Windows()
     // 全てのウィンドウを破棄する
     for (HWND hwnd : hwndArray) DestroyWindow(hwnd);
     assert(0 == windows.size());
-
-    // COMライブラリを閉じる
-    CoUninitialize();
 }
 
 int gd::Windows::create(std::unique_ptr<RootComponent>&& rootComponent)

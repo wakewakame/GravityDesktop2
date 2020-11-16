@@ -38,6 +38,8 @@ namespace gd
 
 		void OnDeviceLost();
 
+		inline Microsoft::WRL::ComPtr<ID3D11DeviceContext>& getDeviceContext() { return m_d3dContext; }
+
 		/**
 		 * vertext関数で塗りつぶす色の指定をします。
 		 * @param rgb 色 ( 0x000000 - 0xFFFFFF )
@@ -107,11 +109,14 @@ namespace gd
 
 		int ellipse(float x, float y, float r, float weight = 1.f, uint8_t div = 32);
 
+		int image(Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>& const texture);
+
 	private:
 		Microsoft::WRL::ComPtr<ID3D11DeviceContext> m_d3dContext;
 		std::unique_ptr<DirectX::CommonStates> m_states;
 		std::unique_ptr<DirectX::BasicEffect> m_effect;
-		std::unique_ptr<DirectX::PrimitiveBatch<DirectX::VertexPositionColor>> m_batch;
+		std::unique_ptr<DirectX::PrimitiveBatch<DirectX::VertexPositionColor>> m_primitiveBatch;
+		std::unique_ptr<DirectX::SpriteBatch> m_spriteBatch;
 		Microsoft::WRL::ComPtr<ID3D11InputLayout> m_inputLayout;
 		DirectX::SimpleMath::Matrix m_proj;
 

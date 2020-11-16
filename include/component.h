@@ -41,7 +41,7 @@ namespace gd
 			if (hWnd) PostMessageW(hWnd, static_cast<UINT>(WM_APP_LIST::EXIT), 0, 0);
 		}
 
-	private:
+	protected:
 		HINSTANCE hInstance = nullptr;
 		HWND hWnd = nullptr;
 	};

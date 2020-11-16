@@ -29,6 +29,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 
+#include <wrl.h>
 #include <wrl/client.h>
 
 #include <d3d11_1.h>
