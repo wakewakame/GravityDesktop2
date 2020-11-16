@@ -120,6 +120,10 @@ namespace gd
 		Microsoft::WRL::ComPtr<ID3D11InputLayout> m_inputLayout;
 		DirectX::SimpleMath::Matrix m_proj;
 
+		ID3D11BlendState* blendState = nullptr;
+		ID3D11DepthStencilState* depthState = nullptr;
+		ID3D11RasterizerState* rasterozerState = nullptr;
+
 		bool isShapeBegan = false;
 		bool isEnableFill = false;
 		std::vector<uint16_t> fillIndices;

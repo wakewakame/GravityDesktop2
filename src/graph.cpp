@@ -229,16 +229,16 @@ int gd::Graph::endShape(bool loopStroke)
 
 void gd::Graph::setRenderMode(BlendMode blend, DepthMode depth, RasterizerMode rasterizer)
 {
-    ID3D11BlendState* blendState =
+    blendState =
         (BlendMode::Opaque   == blend) ? m_states->Opaque()   :  // 上書き
         (BlendMode::Additive == blend) ? m_states->Additive() :  // 加算合成
         m_states->NonPremultiplied();                            // アルファブレンド
 
-    ID3D11DepthStencilState* depthState =
+    depthState =
         (DepthMode::DepthDefault == depth) ? m_states->DepthDefault() :  // Zバッファを使用する
         m_states->DepthNone();                                           // Zバッファを使用しない
 
-    ID3D11RasterizerState* rasterozerState =
+    rasterozerState =
         (RasterizerMode::CullClockwise == rasterizer) ? m_states->CullClockwise() :
         (RasterizerMode::CullCounterClockwise == rasterizer) ? m_states->CullCounterClockwise() :
         (RasterizerMode::Wireframe == rasterizer) ? m_states->Wireframe() :
@@ -296,7 +296,7 @@ int gd::Graph::ellipse(float x, float y, float r, float weight, uint8_t div)
 
 int gd::Graph::image(Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>& const texture)
 {
-    m_spriteBatch->Begin();
+    m_spriteBatch->Begin(SpriteSortMode_Deferred, blendState, nullptr, depthState, rasterozerState);
     m_spriteBatch->Draw(
         texture.Get(),
         XMFLOAT2{ 0.0, 0.0 }
