@@ -8,6 +8,7 @@
 
 #include "types.h"
 #include "root_component.h"
+#include "hook.h"
 
 namespace gd
 {
@@ -23,9 +24,17 @@ namespace gd
 
 		FakeDesktopComponent() {}
 		virtual ~FakeDesktopComponent() {
+			/*
+			メモ
+			以下の処理は終了時に絶対に呼ばれてほしいので、Component::exit関数に移動させてはいけない。
+			*/
+
 			// デスクトップの祖先ウィンドウを不透明にする
 			if (result.isErr || result.isNone) { return; }
 			show(GetAncestor(result.value.listview, GA_ROOTOWNER));
+
+			// フックを外す
+			removeHook();
 		}
 
 		DWORD getWindowStyle() const override final { return WS_POPUP | WS_CHILD; }
@@ -56,6 +65,9 @@ namespace gd
 			// (デスクトップは不透明のままにする)
 			HWND ancestor = GetAncestor(result.value.listview, GA_ROOTOWNER);
 			hide(ancestor);
+
+			// マウスイベントとキーイベントのフックをする
+			insertHook(GetParent(result.value.wallpaper), hWnd);
 		}
 		void render(gd::Graph& graph, gd::Mouse& mouse) override
 		{

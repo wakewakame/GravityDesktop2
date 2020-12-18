@@ -27,7 +27,12 @@ add_executable(GravityDesktop2 WIN32
 )
 
 # インクルードディレクトリを指定する
-target_include_directories(GravityDesktop2 PRIVATE ${PROJECT_SOURCE_DIR}/include)
+target_include_directories(GravityDesktop2 PRIVATE
+
+	${PROJECT_SOURCE_DIR}/include
+	${PROJECT_SOURCE_DIR}/lib/hook
+
+)
 
 # プリコンパイル済みヘッダを指定する
 target_precompile_headers(GravityDesktop2 PRIVATE ${PROJECT_SOURCE_DIR}/include/pch.h)
@@ -70,5 +75,14 @@ target_compile_options(GravityDesktop2 PRIVATE
 
 	# 一部の警告を無視する
 	"/wd4061" "/wd4365" "/wd4514" "/wd4571" "/wd4668" "/wd4710" "/wd4820" "/wd5039" "/wd5045" "/wd26812"
+
+)
+
+# ビルド時に必要なdllを集めるようにする
+add_custom_command(TARGET GravityDesktop2 POST_BUILD
+
+	COMMAND ${CMAKE_COMMAND} -E copy_if_different
+	"$<TARGET_FILE_DIR:hook>/hook.dll"
+	"$<TARGET_FILE_DIR:GravityDesktop2>"
 
 )

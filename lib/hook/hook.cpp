@@ -1,7 +1,6 @@
 #include "hook.h"
 
 #pragma data_seg(".shareddata")
-#pragma data_seg()
 
 // フックするウィンドウハンドル
 HWND targetHwnd_ = NULL;
@@ -13,11 +12,15 @@ HWND forwardHwnd_ = NULL;
 HHOOK hKeyHook = NULL;
 HHOOK hMouseHook = NULL;
 
+#pragma data_seg()
+
 // DLLのインスタンス
 HINSTANCE hinstDLL_;
 
 bool insertHook(HWND targetHwnd, HWND forwardHwnd)
 {
+	removeHook();
+
 	// ウィンドウハンドルを記憶しておく
 	targetHwnd_ = targetHwnd;
 	forwardHwnd_ = forwardHwnd;
@@ -60,7 +63,7 @@ void removeHook()
 LRESULT CALLBACK KeyHookProc(int nCode, WPARAM wp, LPARAM lp)
 {
 	// 決まり事
-	if (0 > nCode) { return CallNextHookEx(hKeyHook, nCode, wp, lp); }
+	if (nCode < 0) { return CallNextHookEx(hKeyHook, nCode, wp, lp); }
 
 	if ((nCode == HC_ACTION) && (forwardHwnd_ != NULL))
 	{
@@ -82,7 +85,7 @@ LRESULT CALLBACK KeyHookProc(int nCode, WPARAM wp, LPARAM lp)
 LRESULT CALLBACK MouseHookProc(int nCode, WPARAM wp, LPARAM lp)
 {
 	// 決まり事
-	if (0 > nCode) { return CallNextHookEx(hKeyHook, nCode, wp, lp); }
+	if (nCode < 0) { return CallNextHookEx(hMouseHook, nCode, wp, lp); }
 
 	if ((nCode == HC_ACTION) && (forwardHwnd_ != NULL))
 	{
@@ -100,7 +103,7 @@ LRESULT CALLBACK MouseHookProc(int nCode, WPARAM wp, LPARAM lp)
 		return 0;
 	}
 
-	return CallNextHookEx(hKeyHook, nCode, wp, lp);
+	return CallNextHookEx(hMouseHook, nCode, wp, lp);
 }
 
 // エントリーポイント
