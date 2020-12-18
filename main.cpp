@@ -7,28 +7,28 @@
 
 using namespace gd;
 
-class CustomComponent : public FakeDesktopComponent
+class CustomComponent : public FakeDesktopComponent2
 {
 public:
     float t = 0.f;
-    Capture capture;
+    //Capture capture;
     void init(gd::Graph& graph)
     {
-        FakeDesktopComponent::init(graph);
+        FakeDesktopComponent2::init(graph);
         graph.setRenderMode(
             BlendMode::AlphaBlend,
             DepthMode::DepthNone,
             //RasterizerMode::Wireframe
             RasterizerMode::CullNone
         );
-        capture.start(graph.getDeviceContext(), hWnd);
+        //capture.start(graph.getDeviceContext(), hWnd);
     }
     void render(gd::Graph& graph, gd::Mouse& mouse) override
     {
-        FakeDesktopComponent::render(graph, mouse);
-        graph.image(capture.getImage());
+        FakeDesktopComponent2::render(graph, mouse);
+        //graph.image(capture.getImage());
 
-        if (t > 5.0f) { closeWindow(); };
+        //if (t > 5.0f) { closeWindow(); };
 
         auto p1 = mouse.point;
         float c = .5f + .5f * std::sin(t+=0.01);

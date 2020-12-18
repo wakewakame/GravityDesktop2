@@ -17,6 +17,7 @@ namespace gd
 	{
 	private:
 		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> shaderResourceView;
+		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> shaderResourceViewBackup;
 
 		// ウィンドウをキャプチャするWin32の非公開関数へのポインタ
 		using DwmGetDxSharedSurface = BOOL(WINAPI*)(HWND, HANDLE*, UINT64*, DXGI_FORMAT*, DWORD*, UINT64*);
@@ -62,7 +63,7 @@ namespace gd
 			static DwmGetDxSharedSurface getSurface = (DwmGetDxSharedSurface)GetProcAddress(user32dll, "DwmGetDxSharedSurface");
 			if (NULL == getSurface)
 			{
-				Windows::error("DwmGetDxSharedSurface関数の取得に失敗しました。");
+				Windows::error(L"DwmGetDxSharedSurface関数の取得に失敗しました。");
 				return 1;
 			}
 
@@ -75,7 +76,7 @@ namespace gd
 			pWin32kUpdateId = 0;
 			if (getSurface(target, &phSurface, &adapterLuid, &pFmtWindow, &pPresentFlags, &pWin32kUpdateId) == 0)
 			{
-				Windows::error("DwmGetDxSharedSurface関数の呼び出しに失敗しました。");
+				Windows::error(L"DwmGetDxSharedSurface関数の呼び出しに失敗しました。");
 				return 1;
 			}
 
@@ -90,16 +91,32 @@ namespace gd
 			// シェーダリソースビューの生成
 			DX::ThrowIfFailed(m_d3dDevice->CreateShaderResourceView(renderTarget.Get(), NULL, &shaderResourceView));
 
+			// テクスチャのバックアップ生成
+			Microsoft::WRL::ComPtr<ID3D11Texture2D> renderTargetBackup;
+			D3D11_TEXTURE2D_DESC renderTargetDesk;
+			renderTarget->GetDesc(&renderTargetDesk);
+			DX::ThrowIfFailed(m_d3dDevice->CreateTexture2D(&renderTargetDesk, NULL, &renderTargetBackup));
+			d3dContext->CopyResource(renderTargetBackup.Get(), renderTarget.Get());
+			DX::ThrowIfFailed(m_d3dDevice->CreateShaderResourceView(renderTargetBackup.Get(), NULL, &shaderResourceViewBackup));
+
 			// 処理終了
 			return 0;
 		}
 
 		/**
-		 * キャプチャを取得します
+		 * 最新のキャプチャを取得します
 		 */
 		inline Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>& getImage()
 		{
 			return shaderResourceView;
+		}
+
+		/**
+		 * 最初のキャプチャを取得します
+		 */
+		inline Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>& getBackupImage()
+		{
+			return shaderResourceViewBackup;
 		}
 	};
 }

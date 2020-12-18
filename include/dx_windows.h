@@ -68,7 +68,7 @@ namespace gd
 		 * エラー用のダイアログを表示します。
 		 * @param description エラーの説明文
 		 */
-		static void error(const std::string& description);
+		static void error(LPCWSTR description);
 
 	private:
 		HINSTANCE hInstance;
@@ -77,7 +77,6 @@ namespace gd
 		static size_t createCount;
 
 		int create(std::unique_ptr<RootComponent>&& rootComponent);
-		static void error(LPCWSTR description);
 		static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 		LRESULT SubProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 	};

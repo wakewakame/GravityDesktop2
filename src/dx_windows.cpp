@@ -171,16 +171,6 @@ void gd::Windows::exit()
     PostQuitMessage(0);
 }
 
-void gd::Windows::error(const std::string& description)
-{
-    // std::stringからLPCWSTRに変換する
-    using convert_t = std::codecvt_utf8<wchar_t>;
-    std::wstring_convert<convert_t, wchar_t> strconverter;
-    std::wstring wDescription_ = strconverter.from_bytes(description);
-    LPCWSTR wDescription = wDescription_.c_str();
-    error(wDescription);
-}
-
 void gd::Windows::error(LPCWSTR description)
 {
     // エラーダイアログを表示する
