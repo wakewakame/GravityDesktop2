@@ -1,17 +1,20 @@
 #include "dx_windows.h"
 #include "component.h"
 #include "capture.h"
+#include "fake_desktop.h"
 
 #include <SpriteBatch.h>
 
 using namespace gd;
 
-class CustomComponent : public gd::RootComponent
+class CustomComponent : public FakeDesktopComponent
 {
 public:
     float t = 0.f;
     Capture capture;
-    void init(gd::Graph& graph) {
+    void init(gd::Graph& graph)
+    {
+        FakeDesktopComponent::init(graph);
         graph.setRenderMode(
             BlendMode::AlphaBlend,
             DepthMode::DepthNone,
@@ -22,7 +25,10 @@ public:
     }
     void render(gd::Graph& graph, gd::Mouse& mouse) override
     {
+        FakeDesktopComponent::render(graph, mouse);
         graph.image(capture.getImage());
+
+        if (t > 5.0f) { closeWindow(); };
 
         auto p1 = mouse.point;
         float c = .5f + .5f * std::sin(t+=0.01);
@@ -46,7 +52,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 
     CustomComponent component;
     ret = windows.create<CustomComponent>();
-    ret = windows.create<CustomComponent>();
+    //ret = windows.create<CustomComponent>();
     if (ret) return 1;
 
     ret = windows.waitUntilExit();

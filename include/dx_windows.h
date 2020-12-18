@@ -1,11 +1,19 @@
+/*
+
+これはウィンドウを生成するためのプログラムです。
+
+*/
+
 #pragma once
 
 #include "pch.h"
 #include "dx_window.h"
-#include "component.h"
+#include "root_component.h"
 
 namespace gd
 {
+	class RootComponent;
+
 	/**
 	 * ウィンドウを生成するための関数をまとめたクラスです。
 	 */

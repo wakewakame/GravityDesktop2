@@ -22,6 +22,7 @@ void gd::MouseProcess::OnWindowMessage(HWND hWnd, UINT message, WPARAM wParam, L
 
 	case WM_LBUTTONDBLCLK:
 		aLDouble = true;
+		[[fallthrough]];
 	case WM_LBUTTONDOWN:
 		// ドラッグ時に画面外へマウスが移動してもキャプチャを続ける
 		if (setMouseCapture(hWnd))
@@ -33,6 +34,7 @@ void gd::MouseProcess::OnWindowMessage(HWND hWnd, UINT message, WPARAM wParam, L
 
 	case WM_RBUTTONDBLCLK:
 		aRDouble = true;
+		[[fallthrough]];
 	case WM_RBUTTONDOWN:
 		// ドラッグ時に画面外へマウスが移動してもキャプチャを続ける
 		if (setMouseCapture(hWnd))
@@ -44,6 +46,7 @@ void gd::MouseProcess::OnWindowMessage(HWND hWnd, UINT message, WPARAM wParam, L
 
 	case WM_MBUTTONDBLCLK:
 		aMDouble = true;
+		[[fallthrough]];
 	case WM_MBUTTONDOWN:
 		// ドラッグ時に画面外へマウスが移動してもキャプチャを続ける
 		if (setMouseCapture(hWnd))

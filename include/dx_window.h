@@ -1,8 +1,14 @@
+/*
+
+これは生成されたウィンドウが行うべき処理をまとめたプログラムです。
+
+*/
+
 #pragma once
 
 #include "pch.h"
 #include "StepTimer.h"
-#include "component.h"
+#include "root_component.h"
 #include "graph.h"
 #include "mouse.h"
 
@@ -52,6 +58,8 @@ namespace gd
 		void CreateResources();
 
 		void OnDeviceLost();
+
+		void Exit();
 
 		// Device resources.
 		HWND m_window;

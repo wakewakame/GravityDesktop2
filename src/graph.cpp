@@ -294,7 +294,7 @@ int gd::Graph::ellipse(float x, float y, float r, float weight, uint8_t div)
     return 0;
 }
 
-int gd::Graph::image(Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>& const texture)
+int gd::Graph::image(const Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>& texture)
 {
     m_spriteBatch->Begin(SpriteSortMode_Deferred, blendState, nullptr, depthState, rasterozerState);
     m_spriteBatch->Draw(

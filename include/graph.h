@@ -1,3 +1,9 @@
+/*
+
+‚±‚ê‚ÍDirectX‚É‚æ‚é•`‰æ‚ğ’ŠÛ‰»‚·‚éƒvƒƒOƒ‰ƒ€‚Å‚·B
+
+*/
+
 #pragma once
 
 #include "pch.h"
@@ -109,7 +115,7 @@ namespace gd
 
 		int ellipse(float x, float y, float r, float weight = 1.f, uint8_t div = 32);
 
-		int image(Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>& const texture);
+		int image(const Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>& texture);
 
 	private:
 		Microsoft::WRL::ComPtr<ID3D11DeviceContext> m_d3dContext;

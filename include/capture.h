@@ -1,18 +1,32 @@
+/*
+
+これは任意のウィンドウをキャプチャするためのプログラムです。
+
+*/
+
 #pragma once
 
 #include "pch.h"
 
 namespace gd
 {
+	/**
+	 * 任意のウィンドウをキャプチャするクラス
+	 */
 	class Capture
 	{
 	private:
 		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> shaderResourceView;
 
-		// ウィンドウをキャプチャする関数
+		// ウィンドウをキャプチャするWin32の非公開関数へのポインタ
 		using DwmGetDxSharedSurface = BOOL(WINAPI*)(HWND, HANDLE*, UINT64*, DXGI_FORMAT*, DWORD*, UINT64*);
 
 	public:
+		/**
+		 * キャプチャを開始します
+		 * @param d3dContext Direct3Dのコンテキスト
+		 * @param キャプチャするウィンドウのハンドル
+		 */
 		bool start(Microsoft::WRL::ComPtr<ID3D11DeviceContext>& d3dContext, HWND target)
 		{
 			// ID3D11Deviceを取得する
@@ -80,6 +94,9 @@ namespace gd
 			return 0;
 		}
 
+		/**
+		 * キャプチャを取得します
+		 */
 		inline Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>& getImage()
 		{
 			return shaderResourceView;

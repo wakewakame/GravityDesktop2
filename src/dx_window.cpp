@@ -124,6 +124,10 @@ void gd::Window::OnWindowMessage(UINT message, WPARAM wParam, LPARAM lParam)
         DestroyWindow(m_window);
         break;
 
+    case WM_DESTROY:
+        Exit();
+        break;
+
     case WM_PAINT:
         if (s_in_sizemove)
         {
@@ -221,6 +225,7 @@ void gd::Window::SetRootComponent(std::unique_ptr<gd::RootComponent>&& root_comp
     if (!static_cast<bool>(root_component)) return;
     this->root_component.swap(root_component);
     this->root_component->setHwnd(m_window);
+    this->root_component->setGDWindow(this);
     this->root_component->init(graph);
 }
 
@@ -254,6 +259,8 @@ void gd::Window::OnWindowSizeChanged(int width, int height)
     CreateResources();
 
     // TODO: Game window is being resized.
+
+    root_component->resize(width, height);
 }
 
 void gd::Window::CreateDevice()
@@ -443,4 +450,18 @@ void gd::Window::OnDeviceLost()
     CreateDevice();
 
     CreateResources();
+}
+
+
+void gd::Window::Exit()
+{
+    Clear();
+
+    // rootComponent::exit‚ðŒÄ‚Ño‚·
+    if (root_component)
+    {
+        root_component->exit(graph);
+    }
+
+    Present();
 }
