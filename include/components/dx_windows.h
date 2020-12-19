@@ -6,9 +6,9 @@
 
 #pragma once
 
-#include "pch.h"
-#include "dx_window.h"
-#include "root_component.h"
+#include "utils/pch.h"
+#include "components/dx_window.h"
+#include "components/root_component.h"
 
 namespace gd
 {

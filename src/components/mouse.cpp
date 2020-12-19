@@ -1,4 +1,4 @@
-#include "mouse.h"
+#include "components/mouse.h"
 
 gd::MouseProcess::MouseProcess()
 {

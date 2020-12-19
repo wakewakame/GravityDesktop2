@@ -6,11 +6,11 @@
 
 #pragma once
 
-#include "pch.h"
-#include "StepTimer.h"
-#include "root_component.h"
-#include "graph.h"
-#include "mouse.h"
+#include "utils/pch.h"
+#include "components/StepTimer.h"
+#include "components/root_component.h"
+#include "components/graph.h"
+#include "components/mouse.h"
 
 namespace gd
 {

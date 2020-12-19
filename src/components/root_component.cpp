@@ -1,5 +1,5 @@
-#include "root_component.h"
-#include "dx_window.h"
+#include "components/root_component.h"
+#include "components/dx_window.h"
 
 gd::RootComponent::RootComponent() {};
 gd::RootComponent::~RootComponent() {};

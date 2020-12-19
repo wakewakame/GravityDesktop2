@@ -1,6 +1,6 @@
 #pragma once
 
-#include "component.h"
+#include "components/component.h"
 
 namespace gd
 {

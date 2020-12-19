@@ -35,7 +35,7 @@ target_include_directories(GravityDesktop2 PRIVATE
 )
 
 # プリコンパイル済みヘッダを指定する
-target_precompile_headers(GravityDesktop2 PRIVATE ${PROJECT_SOURCE_DIR}/include/pch.h)
+target_precompile_headers(GravityDesktop2 PRIVATE ${PROJECT_SOURCE_DIR}/include/utils/pch.h)
 
 # GravityDesktop2 に必要なlibファイルを追加する
 target_link_libraries(GravityDesktop2 PRIVATE

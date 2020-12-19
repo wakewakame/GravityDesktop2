@@ -6,9 +6,9 @@
 
 #pragma once
 
-#include "types.h"
-#include "root_component.h"
-#include "capture.h"
+#include "utils/types.h"
+#include "components/root_component.h"
+#include "desktop/capture.h"
 #include "hook.h"
 
 namespace gd

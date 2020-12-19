@@ -1,6 +1,6 @@
 #pragma once
 
-#include "graph.h"
+#include "components/graph.h"
 
 using namespace DirectX;
 using namespace DirectX::SimpleMath;

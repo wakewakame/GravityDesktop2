@@ -1,7 +1,7 @@
-#include "dx_windows.h"
-#include "component.h"
-#include "capture.h"
-#include "fake_desktop.h"
+#include "components/dx_windows.h"
+#include "components/component.h"
+#include "desktop/capture.h"
+#include "desktop/fake_desktop.h"
 
 #include <SpriteBatch.h>
 

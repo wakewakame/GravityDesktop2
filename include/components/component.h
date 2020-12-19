@@ -1,8 +1,8 @@
 #pragma once
 
-#include "pch.h"
-#include "graph.h"
-#include "mouse.h"
+#include "utils/pch.h"
+#include "components/graph.h"
+#include "components/mouse.h"
 
 namespace gd
 {
