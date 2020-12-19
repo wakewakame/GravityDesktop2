@@ -19,6 +19,7 @@ namespace gd
 		bool isSelect = false;
 		bool isFocus = false;
 		bool isHot = false;
+		const size_t index;  // 0から始まるアイコンの番号
 
 		bool update()
 		{
@@ -82,7 +83,6 @@ namespace gd
 		const HWND   hWnd;   // SysListViewのウィンドウハンドル
 		const HANDLE hProc;  // SysListViewのプロセスハンドル
 		const LPVOID ptr;    // SysListViewに生成したメモリの先頭ポインタ
-		const size_t index;  // 0から始まるアイコンの番号
 	};
 
 	class Icons

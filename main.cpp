@@ -27,6 +27,7 @@ public:
         capture1.start(graph.getDeviceContext(), desk.value.wallpaper);
         capture2.start(graph.getDeviceContext(), desk.value.listview);
         icons = std::make_unique<Icons>(desk.value.listview);
+        icons->update();
     }
     void render(gd::Graph& graph, gd::Mouse& mouse) override
     {
@@ -48,9 +49,14 @@ public:
 
         graph.fill(1.f, 0.f, 0.f, .0f);
         graph.stroke(1.f, 0.f, 0.f, 0.5f);
-        icons->update();
+        static size_t count = 0, t = 0;
+        t = (t + 1) % 3;
+        if (0 == t) { count = (count + 1) % icons->size(); }
+        else { return; }
+        icons->unselect();
         for (auto& icon : *icons)
         {
+            if (icon.index == count) { icon.select(LVIS_FOCUSED | LVIS_SELECTED, LVIS_FOCUSED | LVIS_SELECTED); }
             graph.rect(icon.itemArea.left, icon.itemArea.top, icon.itemArea.right, icon.itemArea.bottom, 1.f);
             graph.rect(icon.iconArea.left, icon.iconArea.top, icon.iconArea.right, icon.iconArea.bottom, 1.f);
         }
