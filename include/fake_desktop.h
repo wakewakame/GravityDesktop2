@@ -54,16 +54,6 @@ namespace gd
 				return;
 			}
 
-			// 壁紙ウィンドウにキーイベントやマウスイベントが届くようにする
-			HWND tmpHwnd = desktopHwnds.value.wallpaper;
-			show(tmpHwnd);
-			EnableWindow(tmpHwnd, TRUE);
-			SetActiveWindow(tmpHwnd);
-			tmpHwnd = GetParent(tmpHwnd);
-			show(tmpHwnd);
-			EnableWindow(tmpHwnd, TRUE);
-			SetActiveWindow(tmpHwnd);
-
 			// 自身の親ウィンドウを壁紙のウィンドウに設定
 			SetParent(hWnd, desktopHwnds.value.wallpaper);
 
@@ -77,8 +67,11 @@ namespace gd
 			HWND ancestor = GetAncestor(desktopHwnds.value.listview, GA_ROOTOWNER);
 			hide(ancestor);
 
-			// デスクトップのマウスイベントとキーイベントのフックをする
-			if (insertHook(GetParent(desktopHwnds.value.wallpaper), hWnd))
+			// 壁紙ウィンドウにキーイベントやマウスイベントが届くようにする
+			EnableWindow(desktopHwnds.value.wallpaper, TRUE);
+
+			// 壁紙ウィンドウへのマウスイベントとキーイベントのフックをする
+			if (insertHook(desktopHwnds.value.wallpaper, hWnd))
 			{
 				Windows::error(L"デスクトップのフックに失敗しました。");
 				closeWindow();
