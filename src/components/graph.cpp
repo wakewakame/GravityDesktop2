@@ -44,7 +44,7 @@ void gd::Graph::CreateDevice(Microsoft::WRL::ComPtr<ID3D11DeviceContext>& d3dCon
     m_primitiveBatch = std::make_unique<PrimitiveBatch<VertexPositionColor>>(m_d3dContext.Get());
     m_spriteBatch = std::make_unique<SpriteBatch>(m_d3dContext.Get());
 
-    setRenderMode(BlendMode::AlphaBlend, DepthMode::DepthNone, RasterizerMode::CullNone);
+    setRenderMode(BlendMode::AlphaBlend1, DepthMode::DepthNone, RasterizerMode::CullNone);
 }
 
 void gd::Graph::CreateResources(const UINT backBufferWidth, const UINT backBufferHeight)
@@ -141,7 +141,7 @@ int gd::Graph::endShape(bool loopStroke)
     m_primitiveBatch->Begin();
 
     // 頂点数が2以下だと描画しないのと同じであるため、頂点数が3以上で描画
-    if (fillVertices.size() >= 3)
+    if (isEnableFill && fillVertices.size() >= 3)
     {
         // TRIANGLESTRIPで塗りつぶしを行うので、頂点のインデックスを指定する必要がある
         // たとえば、頂点が10個の場合は次のようにインデックスを振る (左: 頂点の追加順, 右: 頂点のインデックス)
@@ -162,7 +162,7 @@ int gd::Graph::endShape(bool loopStroke)
     }
 
     // 頂点数が1以下だと描画しないのと同じであるため、頂点数が2以上で描画
-    if (strokeVertices.size() >= 2)
+    if ((strokeWeightBrush > 0.f) && (strokeVertices.size() >= 2))
     {
         // strokeVerticesに太さを持たせた頂点配列を計算してtmpStrokeVerticesに格納する
         std::vector<DirectX::VertexPositionColor> tmpStrokeVertices;
@@ -230,9 +230,10 @@ int gd::Graph::endShape(bool loopStroke)
 void gd::Graph::setRenderMode(BlendMode blend, DepthMode depth, RasterizerMode rasterizer)
 {
     blendState =
-        (BlendMode::Opaque   == blend) ? m_states->Opaque()   :  // 上書き
-        (BlendMode::Additive == blend) ? m_states->Additive() :  // 加算合成
-        m_states->NonPremultiplied();                            // アルファブレンド
+        (BlendMode::Opaque      == blend) ? m_states->Opaque()     :  // 上書き
+        (BlendMode::Additive    == blend) ? m_states->Additive()   :  // 加算合成
+        (BlendMode::AlphaBlend2 == blend) ? m_states->AlphaBlend() :  // アルファブレンド2
+        m_states->NonPremultiplied();                                 // アルファブレンド1
 
     depthState =
         (DepthMode::DepthDefault == depth) ? m_states->DepthDefault() :  // Zバッファを使用する

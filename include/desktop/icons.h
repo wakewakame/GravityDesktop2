@@ -14,7 +14,14 @@ namespace gd
 			: hWnd(hWnd), hProc(hProc), ptr(ptr), index(index) {}
 		virtual ~Icon() {}
 
-		bool update() {
+		RECT iconArea{};
+		RECT itemArea{};
+		bool isSelect = false;
+		bool isFocus = false;
+		bool isHot = false;
+
+		bool update()
+		{
 			// アイコン部分の範囲取得
 			iconArea.left = LVIR_ICON;
 			if (WriteProcessMemory(hProc, ptr, &iconArea, sizeof(RECT), NULL) == 0) return 1;
@@ -29,17 +36,18 @@ namespace gd
 
 			// 選択、フォーカス情報取得
 			UINT ret = SendMessage(hWnd, LVM_GETITEMSTATE, index, LVIS_SELECTED | LVIS_FOCUSED);
-			_isSelect = ((ret & LVIS_SELECTED) == LVIS_SELECTED);
-			_isFocus = ((ret & LVIS_FOCUSED) == LVIS_FOCUSED);
+			isSelect = ((ret & LVIS_SELECTED) == LVIS_SELECTED);
+			isFocus = ((ret & LVIS_FOCUSED) == LVIS_FOCUSED);
 
 			// ホットアイテム情報取得
-			_isHot = (index == SendMessage(hWnd, LVM_GETHOTITEM, 0, 0));
+			isHot = (index == SendMessage(hWnd, LVM_GETHOTITEM, 0, 0));
 
 			// 処理終了
 			return 0;
 		}
 
-		bool select(UINT state, UINT stateMast) {
+		bool select(UINT state, UINT stateMast)
+		{
 			// アイテムのステータス変更
 			LVITEM lvi{};  // 初期化子を呼ぶとゼロで初期化される
 			lvi.state = state;
@@ -51,39 +59,30 @@ namespace gd
 			SendMessage(hWnd, WM_ACTIVATE, WA_CLICKACTIVE, 0);
 
 			// 代入
-			_isSelect = 1;
-			_isFocus = 1;
+			isSelect = 1;
+			isFocus = 1;
 
 			// 処理終了
 			return 0;
 		}
 
-		bool hot() {
+		bool hot()
+		{
 			// ホットアイテム設定
 			SendMessage(hWnd, LVM_SETHOTITEM, index, 0);
 
 			// 代入
-			_isHot = 1;
+			isHot = 1;
 
 			// 処理終了
 			return 0;
 		}
-
-		inline bool isSelect() { return _isSelect; }
-		inline bool isFocus() { return _isFocus; }
-		inline bool isHot() { return _isHot; }
 
 	private:
 		const HWND   hWnd;   // SysListViewのウィンドウハンドル
 		const HANDLE hProc;  // SysListViewのプロセスハンドル
 		const LPVOID ptr;    // SysListViewに生成したメモリの先頭ポインタ
 		const size_t index;  // 0から始まるアイコンの番号
-
-		bool _isSelect = 0;
-		bool _isFocus = 0;
-		bool _isHot = 0;
-		RECT iconArea{};
-		RECT itemArea{};
 	};
 
 	class Icons
@@ -92,6 +91,11 @@ namespace gd
 		Icons(HWND sysListViewHWnd)
 			: hWnd(sysListViewHWnd), hProc(nullptr), ptr(nullptr) {}
 		virtual ~Icons() { pFree(); }
+
+		Icon& operator[](const size_t n) { return icons[n]; }
+		size_t size() const { return icons.size(); }
+		std::vector<gd::Icon>::iterator begin() { return icons.begin(); }
+		std::vector<gd::Icon>::iterator end() { return icons.end(); }
 
 		/**
 		 * 全てのアイコンを取得する

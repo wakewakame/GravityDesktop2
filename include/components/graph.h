@@ -12,9 +12,10 @@ namespace gd
 {
 	enum class BlendMode : uint8_t
 	{
-		Opaque,      // 不透明 (α値を無視する)
-		AlphaBlend,  // アルファブレンド
-		Additive,    // 加算合成
+		Opaque,       // 不透明 (α値を無視する)
+		AlphaBlend1,  // アルファブレンド1
+		AlphaBlend2,  // アルファブレンド2
+		Additive,     // 加算合成
 	};
 
 	enum class DepthMode : uint8_t
@@ -104,7 +105,7 @@ namespace gd
 		 * @param rasterizer 面の描画方法の指定
 		 */
 		void setRenderMode(
-			BlendMode blend = BlendMode::AlphaBlend,
+			BlendMode blend = BlendMode::AlphaBlend1,
 			DepthMode depth = DepthMode::DepthNone,
 			RasterizerMode rasterizer = RasterizerMode::CullNone
 		);
