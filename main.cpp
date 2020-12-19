@@ -2,6 +2,7 @@
 #include "components/component.h"
 #include "desktop/capture.h"
 #include "desktop/fake_desktop.h"
+#include "desktop/icons.h"
 
 #include <SpriteBatch.h>
 
