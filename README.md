@@ -1,3 +1,6 @@
+**※このプログラムは開発中です**
+**まだアイコンが落下する機能を実装していません**
+
 ![demo](image/demo.gif)
 
 # Gravity Desktop 2
