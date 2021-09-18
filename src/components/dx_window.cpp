@@ -72,9 +72,11 @@ void gd::Window::Render()
     if (root_component)
     {
         mouseProc.nextFrame();
-        Mouse mouse = mouseProc.getMouseStatus();
+        keyboardProc.nextFrame();
+        const Mouse mouse = mouseProc.getMouseStatus();
+        const Keyboard keyboard = keyboardProc.getKeyboardStatus();
 
-        root_component->render(graph, mouse);
+        root_component->render(graph, mouse, keyboard);
     }
 
     Present();
@@ -117,6 +119,7 @@ void gd::Window::Present()
 void gd::Window::OnWindowMessage(UINT message, WPARAM wParam, LPARAM lParam)
 {
     mouseProc.OnWindowMessage(m_window, message, wParam, lParam);
+    keyboardProc.OnWindowMessage(m_window, message, wParam, lParam);
 
     switch (message)
     {
@@ -226,6 +229,7 @@ void gd::Window::SetRootComponent(std::unique_ptr<gd::RootComponent>&& root_comp
     this->root_component.swap(root_component);
     this->root_component->setHwnd(m_window);
     this->root_component->setGDWindow(this);
+    this->root_component->resize(m_outputWidth, m_outputHeight);
     this->root_component->init(graph);
 }
 

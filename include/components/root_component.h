@@ -18,7 +18,7 @@ namespace gd
 		virtual ~RootComponent();
 
 		virtual void init(gd::Graph& graph) override;
-		virtual void render(gd::Graph& graph, gd::Mouse& mouse) override;
+		virtual void render(gd::Graph& graph, const gd::Mouse& mouse, const gd::Keyboard& keyboard) override;
 		virtual void exit(Graph& graph) override;
 		virtual void resize(int width, int height) override;
 

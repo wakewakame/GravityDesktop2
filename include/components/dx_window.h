@@ -11,6 +11,7 @@
 #include "components/root_component.h"
 #include "components/graph.h"
 #include "components/mouse.h"
+#include "components/keyboard.h"
 
 namespace gd
 {
@@ -89,5 +90,6 @@ namespace gd
 		std::unique_ptr<RootComponent> root_component;
 		Graph graph;
 		MouseProcess mouseProc;
+		KeyboardProcess keyboardProc;
 	};
 }

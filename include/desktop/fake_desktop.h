@@ -18,9 +18,10 @@ namespace gd
 	public:
 		struct DesktopHwnds
 		{
-			HWND listview = NULL;        // デスクトップのアイコンを表示するウィンドウハンドル
-			HWND wallpaper = NULL;       // デスクトップの壁紙を表示するウィンドウハンドル
-			std::vector<HWND> taskbars;  // 各モニターのタスクバーのウィンドウハンドル
+			uint32_t backgroundColor = 0x000000;  // デスクトップの背景色
+			HWND listview = NULL;                 // デスクトップのアイコンを表示するウィンドウハンドル
+			HWND wallpaper = NULL;                // デスクトップの壁紙を表示するウィンドウハンドル
+			std::vector<HWND> taskbars;           // 各モニターのタスクバーのウィンドウハンドル
 		};
 
 		FakeDesktopComponent() {}
@@ -78,9 +79,9 @@ namespace gd
 				return;
 			}
 		}
-		void render(gd::Graph& graph, gd::Mouse& mouse) override
+		void render(gd::Graph& graph, const gd::Mouse& mouse, const gd::Keyboard& keyboard) override
 		{
-			RootComponent::render(graph, mouse);
+			RootComponent::render(graph, mouse, keyboard);
 		}
 		void exit(gd::Graph& graph) override
 		{
@@ -95,6 +96,13 @@ namespace gd
 		static Result<DesktopHwnds> getDesktopHwnd()
 		{
 			DesktopHwnds result;
+
+			// デスクトップの背景色を取得する
+			const uint32_t backgroundColor = GetSysColor(COLOR_BACKGROUND);
+			result.backgroundColor =
+				((backgroundColor & 0x0000FF) << 16) +
+				((backgroundColor & 0x00FF00) << 0 ) +
+				((backgroundColor & 0xFF0000) >> 16);
 
 			/*
 			メモ

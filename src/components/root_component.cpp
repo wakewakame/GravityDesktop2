@@ -8,9 +8,9 @@ void gd::RootComponent::init(gd::Graph& graph)
 {
 	Component::init(graph);
 }
-void gd::RootComponent::render(gd::Graph& graph, gd::Mouse& mouse)
+void gd::RootComponent::render(gd::Graph& graph, const gd::Mouse& mouse, const gd::Keyboard& keyboard)
 {
-	Component::render(graph, mouse);
+	Component::render(graph, mouse, keyboard);
 }
 void gd::RootComponent::exit(gd::Graph& graph)
 {

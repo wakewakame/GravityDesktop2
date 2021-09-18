@@ -110,7 +110,7 @@ void gd::MouseProcess::nextFrame()
 	aZDelta = 0;
 }
 
-gd::Mouse gd::MouseProcess::getMouseStatus()
+gd::Mouse gd::MouseProcess::getMouseStatus() const
 {
 	Mouse mouse;
 

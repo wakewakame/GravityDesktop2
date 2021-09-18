@@ -12,7 +12,9 @@ class CustomComponent : public RootComponent
 {
 public:
     float t = 0.f;
-    Capture capture1, capture2;
+    int width, height;
+    uint32_t backgroundColor = 0x000000;
+    Capture wallpaperCapture, listviewCapture;
     std::unique_ptr<Icons> icons;
     void init(gd::Graph& graph)
     {
@@ -24,23 +26,31 @@ public:
             RasterizerMode::CullNone
         );
         auto desk = FakeDesktopComponent::getDesktopHwnd();
-        capture1.start(graph.getDeviceContext(), desk.value.wallpaper);
-        capture2.start(graph.getDeviceContext(), desk.value.listview);
+        backgroundColor = desk.value.backgroundColor;
+        wallpaperCapture.start(graph.getDeviceContext(), desk.value.wallpaper);
+        listviewCapture.start(graph.getDeviceContext(), desk.value.listview);
         icons = std::make_unique<Icons>(desk.value.listview);
         icons->update();
     }
-    void render(gd::Graph& graph, gd::Mouse& mouse) override
+    void render(gd::Graph& graph, const gd::Mouse& mouse, const gd::Keyboard& keyboard) override
     {
-        RootComponent::render(graph, mouse);
+        RootComponent::render(graph, mouse, keyboard);
+        graph.fill(backgroundColor, 0xff);
+        graph.stroke(0x000000, 0x00);
+        graph.rect(0, 0, width, height);
 
-        //if (t > 5.0f) { closeWindow(); };
+        // 終了のショートカットキー
+        if (
+            keyboard.keys.count(VK_ESCAPE) ||  // 'Esc'キー
+            keyboard.keys.count(0x51)          // 'Q'キー
+        ) { closeWindow(); }
 
         auto p1 = mouse.point;
         float c = .5f + .5f * std::sin(t+=0.01);
 
-        graph.setRenderMode(BlendMode::AlphaBlend2, DepthMode::DepthNone, RasterizerMode::CullNone);
-        graph.image(capture1.getBackupImage());
-        graph.image(capture2.getImage());
+        graph.setRenderMode(BlendMode::AlphaBlend1, DepthMode::DepthNone, RasterizerMode::CullNone);
+        graph.image(wallpaperCapture.getBackupImage());
+        graph.image(listviewCapture.getImage());
 
         graph.setRenderMode(BlendMode::AlphaBlend1, DepthMode::DepthNone, RasterizerMode::CullNone);
         graph.fill(c, c, c, .5f);
@@ -60,6 +70,10 @@ public:
             graph.rect(icon.itemArea.left, icon.itemArea.top, icon.itemArea.right, icon.itemArea.bottom, 1.f);
             graph.rect(icon.iconArea.left, icon.iconArea.top, icon.iconArea.right, icon.iconArea.bottom, 1.f);
         }
+    }
+    void resize(int width, int height) override {
+        this->width = width;
+        this->height = height;
     }
 };
 

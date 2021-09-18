@@ -56,7 +56,7 @@ namespace gd
 		 * 現在のフレームにおけるマウスの状態を取得する
 		 * @return 現在のフレームにおけるマウスの状態
 		 */
-		Mouse getMouseStatus();
+		Mouse getMouseStatus() const;
 
 	private:
 		POINTS aMouse = {};       // 最新のマウス座標
