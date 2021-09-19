@@ -18,7 +18,6 @@ namespace gd
 	public:
 		struct DesktopHwnds
 		{
-			uint32_t backgroundColor = 0x000000;  // デスクトップの背景色
 			HWND listview = NULL;                 // デスクトップのアイコンを表示するウィンドウハンドル
 			HWND wallpaper = NULL;                // デスクトップの壁紙を表示するウィンドウハンドル
 			std::vector<HWND> taskbars;           // 各モニターのタスクバーのウィンドウハンドル
@@ -41,7 +40,7 @@ namespace gd
 
 		DWORD getWindowStyle() const override final { return WS_POPUP | WS_CHILD; }
 
-		void init(gd::Graph& graph)
+		void init(gd::Graph& graph) override
 		{
 			RootComponent::init(graph);
 			HWND hWnd = getHwnd();
@@ -96,13 +95,6 @@ namespace gd
 		static Result<DesktopHwnds> getDesktopHwnd()
 		{
 			DesktopHwnds result;
-
-			// デスクトップの背景色を取得する
-			const uint32_t backgroundColor = GetSysColor(COLOR_BACKGROUND);
-			result.backgroundColor =
-				((backgroundColor & 0x0000FF) << 16) +
-				((backgroundColor & 0x00FF00) << 0 ) +
-				((backgroundColor & 0xFF0000) >> 16);
 
 			/*
 			メモ

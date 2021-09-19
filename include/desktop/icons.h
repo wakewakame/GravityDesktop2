@@ -14,34 +14,29 @@ namespace gd
 			: hWnd(hWnd), hProc(hProc), ptr(ptr), index(index) {}
 		virtual ~Icon() {}
 
-		RECT iconArea{};
-		RECT itemArea{};
-		bool isSelect = false;
-		bool isFocus = false;
-		bool isHot = false;
 		const size_t index;  // 0から始まるアイコンの番号
 
 		bool update()
 		{
 			// アイコン部分の範囲取得
-			iconArea.left = LVIR_ICON;
-			if (WriteProcessMemory(hProc, ptr, &iconArea, sizeof(RECT), NULL) == 0) return 1;
+			iconArea_.left = LVIR_ICON;
+			if (WriteProcessMemory(hProc, ptr, &iconArea_, sizeof(RECT), NULL) == 0) return 1;
 			SendMessage(hWnd, LVM_GETITEMRECT, index, (LPARAM)ptr);
-			if (ReadProcessMemory(hProc, ptr, &iconArea, sizeof(RECT), NULL) == 0) return 1;
+			if (ReadProcessMemory(hProc, ptr, &iconArea_, sizeof(RECT), NULL) == 0) return 1;
 
 			// アイコン部分とテキスト部分の両方の範囲取得
-			itemArea.left = LVIR_BOUNDS;
-			if (WriteProcessMemory(hProc, ptr, &itemArea, sizeof(RECT), NULL) == 0) return 1;
+			itemArea_.left = LVIR_BOUNDS;
+			if (WriteProcessMemory(hProc, ptr, &itemArea_, sizeof(RECT), NULL) == 0) return 1;
 			SendMessage(hWnd, LVM_GETITEMRECT, index, (LPARAM)ptr);
-			if (ReadProcessMemory(hProc, ptr, &itemArea, sizeof(RECT), NULL) == 0) return 1;
+			if (ReadProcessMemory(hProc, ptr, &itemArea_, sizeof(RECT), NULL) == 0) return 1;
 
 			// 選択、フォーカス情報取得
 			UINT ret = SendMessage(hWnd, LVM_GETITEMSTATE, index, LVIS_SELECTED | LVIS_FOCUSED);
-			isSelect = ((ret & LVIS_SELECTED) == LVIS_SELECTED);
-			isFocus = ((ret & LVIS_FOCUSED) == LVIS_FOCUSED);
+			isSelect_ = ((ret & LVIS_SELECTED) == LVIS_SELECTED);
+			isFocus_ = ((ret & LVIS_FOCUSED) == LVIS_FOCUSED);
 
 			// ホットアイテム情報取得
-			isHot = (index == SendMessage(hWnd, LVM_GETHOTITEM, 0, 0));
+			isHot_ = (index == SendMessage(hWnd, LVM_GETHOTITEM, 0, 0));
 
 			// 処理終了
 			return 0;
@@ -60,8 +55,8 @@ namespace gd
 			SendMessage(hWnd, WM_ACTIVATE, WA_CLICKACTIVE, 0);
 
 			// 代入
-			isSelect = 1;
-			isFocus = 1;
+			isSelect_ = 1;
+			isFocus_ = 1;
 
 			// 処理終了
 			return 0;
@@ -73,16 +68,27 @@ namespace gd
 			SendMessage(hWnd, LVM_SETHOTITEM, index, 0);
 
 			// 代入
-			isHot = 1;
+			isHot_ = 1;
 
 			// 処理終了
 			return 0;
 		}
 
+		RECT iconArea() const { return iconArea_; };
+		RECT itemArea() const { return itemArea_; };
+		bool isSelect() const { return isSelect_; };
+		bool isFocus() const { return isFocus_; };
+		bool isHot() const { return isHot_; }
+
 	private:
 		const HWND   hWnd;   // SysListViewのウィンドウハンドル
 		const HANDLE hProc;  // SysListViewのプロセスハンドル
 		const LPVOID ptr;    // SysListViewに生成したメモリの先頭ポインタ
+		RECT iconArea_{};
+		RECT itemArea_{};
+		bool isSelect_ = false;
+		bool isFocus_ = false;
+		bool isHot_ = false;
 	};
 
 	class Icons
