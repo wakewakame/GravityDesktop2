@@ -30,12 +30,12 @@ namespace gd
 			以下の処理は終了時に絶対に呼ばれてほしいので、Component::exit関数に移動させてはいけない。
 			*/
 
+			// フックを外す
+			removeHook();
+
 			// デスクトップの祖先ウィンドウを不透明にする
 			if (desktopHwnds.isErr || desktopHwnds.isNone) { return; }
 			show(GetAncestor(desktopHwnds.value.listview, GA_ROOTOWNER));
-
-			// フックを外す
-			removeHook();
 		}
 
 		DWORD getWindowStyle() const override final { return WS_POPUP | WS_CHILD; }
