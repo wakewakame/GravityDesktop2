@@ -38,6 +38,15 @@ namespace gd
 		bool mDouble = false;    // 現在のフレームの中央ダブルクリック
 
 		int zDelta = 0;          // 現在のフレームのホイールの回転数
+
+		inline bool lClick()   const { return lPressed && (!lPressed_); }
+		inline bool lRelease() const { return (!lPressed) && lPressed_; }
+
+		inline bool rClick()   const { return lPressed && (!lPressed_); }
+		inline bool rRelease() const { return (!lPressed) && lPressed_; }
+
+		inline bool mClick()   const { return lPressed && (!lPressed_); }
+		inline bool mRelease() const { return (!lPressed) && lPressed_; }
 	};
 
 	class MouseProcess

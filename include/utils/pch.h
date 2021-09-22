@@ -82,3 +82,5 @@ namespace DX
 #include "SpriteFont.h"
 #include "VertexTypes.h"
 #include "WICTextureLoader.h"
+
+#include "box2d/box2d.h"
