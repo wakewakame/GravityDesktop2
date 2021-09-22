@@ -18,7 +18,7 @@ public:
 	std::list<PhysicsObj> obj;
 
 	// ドラッグ中のオブジェクト
-	PhysicsObj drag_obj;
+	PhysicsPicker drag_picker;
 
 	// ウィンドウリサイズ時
     int width, height;
@@ -32,7 +32,9 @@ public:
 
 		// オブジェクトの生成
 		for (int i = 0; i < 9; i++) {
-			auto& o = obj.emplace_back(world.createObj(70.0f * i, 10.0f, 60.0f, 100.0f, PhysicsObjType::DYNAMIC));
+			obj.emplace_back(world.createObj(
+				70.0f * i, 10.0f, 60.0f, 100.0f, PhysicsObjType::DYNAMIC, 0x0001, 0x0001
+			));
 		}
     }
 
@@ -44,14 +46,19 @@ public:
         graph.rect(0, 0, width, height, 0.0f);
 
 		// ドラッグ処理
-		if (mouse.lRelease()) drag_obj.reset();
+		if (mouse.lRelease()) drag_picker.reset();
 		if (mouse.lClick()) for (auto& o : obj) {
 			if (o->isHit(mouse.point.x, mouse.point.y)) {
-				drag_obj = o;
+				drag_picker = world.createPicker(o, mouse.point.x, mouse.point.y);
 				break;
 			}
 		}
-		if (drag_obj) drag_obj->spring(mouse.point.x, mouse.point.y);
+		if (drag_picker) drag_picker->setPosition(mouse.point.x, mouse.point.y);
+
+		// 右クリックでオブジェクトを集める
+		if (mouse.rPressed) {
+			for (auto& o : obj) o->spring(mouse.point.x, mouse.point.y, 60.0f);
+		}
 
 		// 物理演算
 		world.update(60.0f);
@@ -59,7 +66,7 @@ public:
 		// オブジェクト数分ループ
 		for (auto& o : obj) {
 			// 色の指定
-			if (o == drag_obj) graph.fill(0xFF00FF, 0x7F);
+			if (drag_picker && o == drag_picker->getObj()) graph.fill(0xFF00FF, 0x7F);
 			else if (o->isHit(mouse.point.x, mouse.point.y)) graph.fill(0xFF00FF, 0xFF);
 			else graph.fill(0x404040, 0xFF);
 

@@ -2,14 +2,23 @@
 
 using namespace gd;
 
-PhysicsObj_::PhysicsObj_(std::shared_ptr<b2World> world, b2Vec2 position, b2Vec2 size, PhysicsObjType type, float pixel_per_meter)
+PhysicsObj_::PhysicsObj_(
+	std::shared_ptr<b2World> world,
+	b2Vec2 position, b2Vec2 size, PhysicsObjType type,
+	float pixel_per_meter,
+	uint16_t categoryBits, uint16_t maskBits
+)
 	: world(world), size(size), pixel_per_meter(pixel_per_meter)
 {
 	// ãÈå`ÇÃê∂ê¨
 	b2BodyDef bodyDef;
-	bodyDef.type = (PhysicsObjType::DYNAMIC == type) ? b2_dynamicBody : b2_staticBody;
+	bodyDef.type =
+		(PhysicsObjType::STATIC  == type) ? b2_staticBody   :
+		(PhysicsObjType::DYNAMIC == type) ? b2_dynamicBody  :
+		                                    b2_kinematicBody;
 	bodyDef.position = (1.0f / pixel_per_meter) * (position + (0.5 * size));
-	bodyDef.angularDamping = 0.1f;
+	bodyDef.angularDamping = 5.0f;
+	//bodyDef.allowSleep = false;
 	b2PolygonShape bodyShape;
 	bodyShape.SetAsBox(size.x * 0.5 / pixel_per_meter, size.y * 0.5 / pixel_per_meter);
 	b2FixtureDef fixtureDef;
@@ -17,6 +26,8 @@ PhysicsObj_::PhysicsObj_(std::shared_ptr<b2World> world, b2Vec2 position, b2Vec2
 	fixtureDef.density = 1.0f;
 	fixtureDef.friction = 0.8f;
 	fixtureDef.restitution = 0.45f;
+	fixtureDef.filter.categoryBits = categoryBits;
+	fixtureDef.filter.maskBits = maskBits;
 	body = world->CreateBody(&bodyDef);
 	body->CreateFixture(&fixtureDef);
 }
@@ -50,18 +61,68 @@ b2Vec2 PhysicsObj_::getSize() const { return size; }
 
 float PhysicsObj_::getAngle() const { return body->GetAngle(); }
 
-bool PhysicsObj_::isHit(float x, float y) const {
+void PhysicsObj_::setPosition(float x, float y) {
+	body->SetAwake(true);
+	body->SetLinearVelocity(60.0f * (b2Vec2{ x / pixel_per_meter, y / pixel_per_meter } - body->GetPosition()));
+}
+
+b2Vec2 PhysicsObj_::getLocalPosition(float x, float y) const {
 	const float r = -getAngle();
 	const b2Mat22 rotate{
 		std::cos(r), -std::sin(r),
 		std::sin(r),  std::cos(r)
 	};
-	const b2Vec2 local_position = b2Mul(rotate, b2Vec2{ x, y } - getPosition());
+	const b2Vec2 localPosition = b2Mul(rotate, b2Vec2{ x, y } - getPosition());
+	return localPosition;
+}
+
+bool PhysicsObj_::isHit(float x, float y) const {
+	const b2Vec2 local_position = getLocalPosition(x, y);
 	return (
 		std::abs(local_position.x) <= (size.x * 0.5) &&
 		std::abs(local_position.y) <= (size.y * 0.5)
 	);
 }
+
+b2Body* PhysicsObj_::getb2Body() { return body; }
+
+PhysicsPicker_::PhysicsPicker_(
+	std::shared_ptr<b2World> world,
+	PhysicsObj obj, b2Vec2 anchor,
+	float pixel_per_meter
+) : obj(obj)
+{
+	targetObj = std::make_shared<PhysicsObj_>(
+		world, anchor, b2Vec2{ 0.0f, 0.0f }, PhysicsObjType::KINEMATIC, pixel_per_meter,
+		0x0001, 0x0000
+	);
+	const b2Vec2 local_anchor = (1.0f / pixel_per_meter) * obj->getLocalPosition(anchor.x, anchor.y);
+	b2RevoluteJointDef jointDef;
+	jointDef.bodyA = obj->getb2Body();
+	jointDef.localAnchorA = local_anchor;
+	jointDef.bodyB = targetObj->getb2Body();
+	jointDef.localAnchorB = b2Vec2{ 0.0f, 0.0f };
+	joint = world->CreateJoint(&jointDef);
+}
+PhysicsPicker_::~PhysicsPicker_() {
+	destroy();
+}
+void PhysicsPicker_::destroy() {
+	if (obj) obj.reset();
+	if (targetObj) targetObj.reset();
+
+	/*
+		ÉÅÉÇ
+		b2JointÇ…åqÇ∞ÇƒÇ¢ÇÈb2BodyÇÃÇ§Çø1Ç¬Ç≈Ç‡destroyÇ≥ÇÍÇÈÇ∆
+		åqÇ™Ç¡ÇƒÇ¢ÇÈb2JointÇ‡é©ìÆìIÇ…destroyÇ≥ÇÍÇÈÅB
+		Box2DÇÕå´Ç¢ÅB
+	*/
+}
+void PhysicsPicker_::setPosition(float x, float y) {
+	targetObj->setPosition(x, y);
+}
+
+PhysicsObj PhysicsPicker_::getObj() { return obj; }
 
 PhysicsWorld::PhysicsWorld(const float pixel_per_meter)
 	: pixel_per_meter(pixel_per_meter), world(std::make_shared<b2World>(b2Vec2{ 0.0f, 0.0f }))
@@ -107,9 +168,15 @@ void PhysicsWorld::update(float fps, int32_t velocityIterations, int32_t positio
 	world->Step(1.0f / fps, velocityIterations, positionIterations);
 }
 
-PhysicsObj PhysicsWorld::createObj(float x, float y, float width, float height, PhysicsObjType type)
+PhysicsObj PhysicsWorld::createObj(
+	float x, float y, float width, float height, PhysicsObjType type,
+	uint16_t categoryBits, uint16_t maskBits
+)
 {
-	return std::make_shared<PhysicsObj_>(world, b2Vec2{ x, y }, b2Vec2{ width, height }, type, pixel_per_meter);
+	return std::make_shared<PhysicsObj_>(
+		world, b2Vec2{ x, y }, b2Vec2{ width, height }, type, pixel_per_meter,
+		categoryBits, maskBits
+	);
 }
 
 void PhysicsWorld::setGravity(float x, float y) { world->SetGravity(b2Vec2{ x / pixel_per_meter, y / pixel_per_meter }); }

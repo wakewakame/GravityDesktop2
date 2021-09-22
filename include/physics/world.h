@@ -7,7 +7,8 @@ namespace gd
 	enum class PhysicsObjType
 	{
 		STATIC,
-		DYNAMIC
+		DYNAMIC,
+		KINEMATIC
 	};
 
 	class PhysicsObj_
@@ -19,16 +20,39 @@ namespace gd
 		const float pixel_per_meter;     // 1メートルあたりのピクセル数
 
 	public:
-		PhysicsObj_(std::shared_ptr<b2World> world, b2Vec2 position, b2Vec2 size, PhysicsObjType type, float pixel_per_meter);
+		PhysicsObj_(
+			std::shared_ptr<b2World> world,
+			b2Vec2 position, b2Vec2 size, PhysicsObjType type,
+			float pixel_per_meter,
+			uint16_t categoryBits = 0x0001, uint16_t maskBits = 0xFFFF
+		);
 		virtual ~PhysicsObj_();
 		void destroy();
 		void spring(float x, float y, float stiffness = 160.0f, float damping = 5.0f);
 		b2Vec2 getPosition() const;
 		b2Vec2 getSize() const;
 		float getAngle() const;
+		void setPosition(float x, float y);
+		b2Vec2 getLocalPosition(float x, float y) const;
 		bool isHit(float x, float y) const;
+		b2Body* getb2Body();
 	};
 	using PhysicsObj = std::shared_ptr<PhysicsObj_>;
+
+	class PhysicsPicker_ {
+	private:
+		PhysicsObj obj;            // つままれるオブジェクト
+		PhysicsObj targetObj;      // 移動の目標となるオブジェクト
+		b2Joint *joint = nullptr;  // 結合 (ポインタの解放はbox2dが担う)
+
+	public:
+		PhysicsPicker_(std::shared_ptr<b2World> world, PhysicsObj obj, b2Vec2 anchor, float pixel_per_meter);
+		virtual ~PhysicsPicker_();
+		void destroy();
+		void setPosition(float x, float y);
+		PhysicsObj getObj();
+	};
+	using PhysicsPicker = std::shared_ptr<PhysicsPicker_>;
 
 	class PhysicsWorld
 	{
@@ -48,8 +72,17 @@ namespace gd
 		PhysicsWorld(const float pixel_per_meter = 200.0f);
 		void resizeWorld(float width, float height);
 		void update(float fps = 60.0f, int32_t velocityIterations = 6, int32_t positionIterations = 2);
-		PhysicsObj createObj(float x, float y, float width, float height, PhysicsObjType type);
+		PhysicsObj createObj(
+			float x, float y, float width, float height, PhysicsObjType type,
+			uint16_t categoryBits = 0x0001, uint16_t maskBits = 0xFFFF
+		);
 		void setGravity(float x, float y);
 		void setEarthGravity();
+		PhysicsPicker createPicker(
+			PhysicsObj& obj, float x, float y
+		)
+		{
+			return std::make_shared<PhysicsPicker_>(world, obj, b2Vec2{ x, y }, pixel_per_meter);
+		}
 	};
 }
