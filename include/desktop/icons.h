@@ -42,12 +42,12 @@ namespace gd
 			return 0;
 		}
 
-		bool select(UINT state, UINT stateMast)
+		bool select(UINT state, UINT stateMask)
 		{
 			// アイテムのステータス変更
 			LVITEM lvi{};  // 初期化子を呼ぶとゼロで初期化される
 			lvi.state = state;
-			lvi.stateMask = stateMast;
+			lvi.stateMask = stateMask;
 			if (WriteProcessMemory(hProc, ptr, &lvi, sizeof(LVITEM), NULL) == 0) return 1; // ptrにitem代入
 			SendMessage(hWnd, LVM_SETITEMSTATE, index, (LPARAM)ptr);
 

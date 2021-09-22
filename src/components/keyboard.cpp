@@ -27,9 +27,8 @@ void gd::KeyboardProcess::OnWindowMessage(HWND hWnd, UINT message, WPARAM wParam
 void gd::KeyboardProcess::nextFrame()
 {
 	// キー入力を更新
-	cKeys.swap(bKeys);
-	bKeys.swap(aKeys);
-	aKeys.clear();
+	cKeys = bKeys;
+	bKeys = aKeys;
 }
 
 gd::Keyboard gd::KeyboardProcess::getKeyboardStatus() const
