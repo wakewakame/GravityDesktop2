@@ -81,6 +81,14 @@ namespace gd
 			return 0;
 		}
 
+		void double_click() {
+			POINTS p{
+				(itemArea_.left + itemArea_.right) / 2,
+				(itemArea_.top + itemArea_.bottom) / 2
+			};
+            PostMessage(hWnd, WM_LBUTTONDBLCLK, 0, MAKELPARAM(p.x, p.y));
+		}
+
 		bool isEnable() const { return enable; };
 		RECT iconArea() const { return iconArea_; };
 		RECT itemArea() const { return itemArea_; };

@@ -32,7 +32,12 @@ public:
         if (
             keyboard.keys.count(VK_ESCAPE) ||  // 'Esc'キー
             keyboard.keys.count(0x51)          // 'Q'キー
-        ) { closeWindow(); }
+        )
+        {
+            // エラーが起きたときにダイアログを出すことができる
+            gd::Windows::error(L"終了します。");
+            closeWindow();
+        }
 
         // マウス座標
         mouseX = mouse.point.x;
