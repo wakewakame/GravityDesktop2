@@ -16,7 +16,7 @@ using namespace gd;
 class CustomComponent : public RootComponent
 {
 public:
-	PhysicsWorld world;
+    PhysicsWorld world;
 	std::list<PhysicsObj> obj;
 	PhysicsPicker drag_picker;
 
@@ -48,15 +48,16 @@ public:
             RECT area = icon.itemArea();
 			obj.emplace_back(world.createObj(
 				area.left, area.top, area.right - area.left, area.bottom - area.top,
-                PhysicsObjType::DYNAMIC, 0x0001, 0x0001
+                PhysicsObjType::DYNAMIC
 			));
 		}
     }
-    void render(gd::Graph& graph, const gd::Mouse& mouse, const gd::Keyboard& keyboard) override
-    {
-        RootComponent::render(graph, mouse, keyboard);
+    void update(float elapsedTime, const gd::Mouse& mouse, const gd::Keyboard& keyboard) {
+        RootComponent::update(elapsedTime, mouse, keyboard);
         if (keyboard.keys.count(VK_ESCAPE)) { closeWindow(); }
-        graph.setRenderMode(BlendMode::AlphaBlend1, DepthMode::DepthNone, RasterizerMode::CullNone);
+
+        // 現在のフレームレートをPhysicsWorldに伝える
+        world.setFps(getFps());
 
 		// ドラッグ処理
 		if (mouse.lRelease()) drag_picker.reset();
@@ -85,7 +86,12 @@ public:
 		}
 
 		// 物理演算
-		world.update(60.0f);
+		world.update();
+    }
+    void render(gd::Graph& graph) override
+    {
+        RootComponent::render(graph);
+        graph.setRenderMode(BlendMode::AlphaBlend1, DepthMode::DepthNone, RasterizerMode::CullNone);
 
         // 壁紙の描画
         graph.setRenderMode(BlendMode::Opaque, DepthMode::DepthNone, RasterizerMode::CullNone);

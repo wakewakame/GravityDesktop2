@@ -78,9 +78,13 @@ namespace gd
 				return;
 			}
 		}
-		void render(gd::Graph& graph, const gd::Mouse& mouse, const gd::Keyboard& keyboard) override
+		void update(float elapsedTime, const gd::Mouse& mouse, const gd::Keyboard& keyboard) override
 		{
-			RootComponent::render(graph, mouse, keyboard);
+			RootComponent::update(elapsedTime, mouse, keyboard);
+		}
+		void render(gd::Graph& graph) override
+		{
+			RootComponent::render(graph);
 		}
 		void exit(gd::Graph& graph) override
 		{

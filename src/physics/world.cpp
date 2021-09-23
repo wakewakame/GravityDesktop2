@@ -2,13 +2,16 @@
 
 using namespace gd;
 
+PhysicsWorldStatus_::PhysicsWorldStatus_(float fps, float pixel_per_meter)
+	: fps(fps), pixel_per_meter(pixel_per_meter) {}
+
 PhysicsObj_::PhysicsObj_(
 	std::shared_ptr<b2World> world,
 	b2Vec2 position, b2Vec2 size, PhysicsObjType type,
-	float pixel_per_meter,
+	PhysicsWorldStatus status,
 	uint16_t categoryBits, uint16_t maskBits
 )
-	: world(world), size(size), pixel_per_meter(pixel_per_meter)
+	: world(world), size(size), status(status)
 {
 	// 矩形の生成
 	b2BodyDef bodyDef;
@@ -16,11 +19,11 @@ PhysicsObj_::PhysicsObj_(
 		(PhysicsObjType::STATIC  == type) ? b2_staticBody   :
 		(PhysicsObjType::DYNAMIC == type) ? b2_dynamicBody  :
 		                                    b2_kinematicBody;
-	bodyDef.position = (1.0f / pixel_per_meter) * (position + (0.5 * size));
-	bodyDef.angularDamping = 5.0f;
+	bodyDef.position = (1.0f / status->pixel_per_meter) * (position + (0.5 * size));
+	bodyDef.angularDamping = 0.0f;
 	//bodyDef.allowSleep = false;
 	b2PolygonShape bodyShape;
-	bodyShape.SetAsBox(size.x * 0.5 / pixel_per_meter, size.y * 0.5 / pixel_per_meter);
+	bodyShape.SetAsBox(size.x * 0.5 / status->pixel_per_meter, size.y * 0.5 / status->pixel_per_meter);
 	b2FixtureDef fixtureDef;
 	fixtureDef.shape = &bodyShape;
 	fixtureDef.density = 1.0f;
@@ -47,7 +50,7 @@ void PhysicsObj_::destroy()
 void PhysicsObj_::spring(float x, float y, float stiffness, float damping)
 {
 	// オブジェクトの座標から移動の目標点までのベクトル
-	b2Vec2 acceleration = b2Vec2{ x / pixel_per_meter, y / pixel_per_meter } - body->GetPosition();
+	b2Vec2 acceleration = b2Vec2{ x / status->pixel_per_meter, y / status->pixel_per_meter } - body->GetPosition();
 	acceleration *= stiffness;                            // バネによる推進力
 	acceleration -= damping * body->GetLinearVelocity();  // ダンパーによる抵抗力
 	acceleration -= body->GetWorld()->GetGravity();       // 重力の影響を無視
@@ -55,7 +58,7 @@ void PhysicsObj_::spring(float x, float y, float stiffness, float damping)
 	body->ApplyForce(body->GetMass() * acceleration, body->GetPosition(), true);
 }
 
-b2Vec2 PhysicsObj_::getPosition() const { return pixel_per_meter * body->GetPosition(); }
+b2Vec2 PhysicsObj_::getPosition() const { return status->pixel_per_meter * body->GetPosition(); }
 
 b2Vec2 PhysicsObj_::getSize() const { return size; }
 
@@ -63,7 +66,9 @@ float PhysicsObj_::getAngle() const { return body->GetAngle(); }
 
 void PhysicsObj_::setPosition(float x, float y) {
 	body->SetAwake(true);
-	body->SetLinearVelocity(60.0f * (b2Vec2{ x / pixel_per_meter, y / pixel_per_meter } - body->GetPosition()));
+	body->SetLinearVelocity(
+		status->fps * (b2Vec2{ x / status->pixel_per_meter, y / status->pixel_per_meter } - body->GetPosition())
+	);
 }
 
 b2Vec2 PhysicsObj_::getLocalPosition(float x, float y) const {
@@ -89,14 +94,14 @@ b2Body* PhysicsObj_::getb2Body() { return body; }
 PhysicsPicker_::PhysicsPicker_(
 	std::shared_ptr<b2World> world,
 	PhysicsObj obj, b2Vec2 anchor,
-	float pixel_per_meter
+	PhysicsWorldStatus status
 ) : obj(obj)
 {
 	targetObj = std::make_shared<PhysicsObj_>(
-		world, anchor, b2Vec2{ 0.0f, 0.0f }, PhysicsObjType::KINEMATIC, pixel_per_meter,
+		world, anchor, b2Vec2{ 0.0f, 0.0f }, PhysicsObjType::KINEMATIC, status,
 		0x0001, 0x0000
 	);
-	const b2Vec2 local_anchor = (1.0f / pixel_per_meter) * obj->getLocalPosition(anchor.x, anchor.y);
+	const b2Vec2 local_anchor = (1.0f / status->pixel_per_meter) * obj->getLocalPosition(anchor.x, anchor.y);
 	b2RevoluteJointDef jointDef;
 	jointDef.bodyA = obj->getb2Body();
 	jointDef.localAnchorA = local_anchor;
@@ -124,9 +129,10 @@ void PhysicsPicker_::setPosition(float x, float y) {
 
 PhysicsObj PhysicsPicker_::getObj() { return obj; }
 
-PhysicsWorld::PhysicsWorld(const float pixel_per_meter)
-	: pixel_per_meter(pixel_per_meter), world(std::make_shared<b2World>(b2Vec2{ 0.0f, 0.0f }))
+PhysicsWorld::PhysicsWorld(float fps, float pixel_per_meter)
+	: world(std::make_shared<b2World>(b2Vec2{ 0.0f, 0.0f }))
 {
+	status = std::make_shared<PhysicsWorldStatus_>(fps, pixel_per_meter);
 	// 画面サイズを設定
 	resizeWorld(640.0f, 480.0f);
 }
@@ -138,7 +144,7 @@ void PhysicsWorld::resizeWorld(float width, float height)
 
 	// 全ての動的オブジェクトがリサイズ後の範囲内に収まるように再配置
 	b2Body* b = world->GetBodyList();
-	b2Vec2 size{ width / pixel_per_meter, height / pixel_per_meter };
+	b2Vec2 size{ width / status->pixel_per_meter, height / status->pixel_per_meter };
 	while (b) {
 		if (b2_dynamicBody == b->GetType()) {
 			b2Vec2 position = b->GetPosition();
@@ -163,9 +169,9 @@ void PhysicsWorld::resizeWorld(float width, float height)
 	setEarthGravity();
 }
 
-void PhysicsWorld::update(float fps, int32_t velocityIterations, int32_t positionIterations)
+void PhysicsWorld::update(int32_t velocityIterations, int32_t positionIterations)
 {
-	world->Step(1.0f / fps, velocityIterations, positionIterations);
+	world->Step(1.0f / status->fps, velocityIterations, positionIterations);
 }
 
 PhysicsObj PhysicsWorld::createObj(
@@ -174,11 +180,22 @@ PhysicsObj PhysicsWorld::createObj(
 )
 {
 	return std::make_shared<PhysicsObj_>(
-		world, b2Vec2{ x, y }, b2Vec2{ width, height }, type, pixel_per_meter,
+		world, b2Vec2{ x, y }, b2Vec2{ width, height }, type, status,
 		categoryBits, maskBits
 	);
 }
 
-void PhysicsWorld::setGravity(float x, float y) { world->SetGravity(b2Vec2{ x / pixel_per_meter, y / pixel_per_meter }); }
+void PhysicsWorld::setFps(float fps) { status->fps = fps; }
 
-void PhysicsWorld::setEarthGravity() { setGravity(0.0f, 9.81f * pixel_per_meter); }
+void PhysicsWorld::setGravity(float x, float y) {
+	world->SetGravity(b2Vec2{ x / status->pixel_per_meter, y / status->pixel_per_meter });
+}
+
+void PhysicsWorld::setEarthGravity() {
+	setGravity(0.0f, 9.81f * status->pixel_per_meter);
+}
+
+PhysicsPicker PhysicsWorld::createPicker(PhysicsObj& obj, float x, float y)
+{
+	return std::make_shared<PhysicsPicker_>(world, obj, b2Vec2{ x, y }, status);
+}

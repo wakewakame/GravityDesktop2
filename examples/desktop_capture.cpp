@@ -29,9 +29,9 @@ public:
         icons = std::make_unique<Icons>(desk.value.listview);
         icons->update();
     }
-    void render(gd::Graph& graph, const gd::Mouse& mouse, const gd::Keyboard& keyboard) override
+    void render(gd::Graph& graph) override
     {
-        RootComponent::render(graph, mouse, keyboard);
+        RootComponent::render(graph);
 
         // •ÇŽ†‚Ì•`‰æ
         graph.setRenderMode(BlendMode::Opaque, DepthMode::DepthNone, RasterizerMode::CullNone);

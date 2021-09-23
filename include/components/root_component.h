@@ -18,7 +18,8 @@ namespace gd
 		virtual ~RootComponent();
 
 		virtual void init(gd::Graph& graph) override;
-		virtual void render(gd::Graph& graph, const gd::Mouse& mouse, const gd::Keyboard& keyboard) override;
+		virtual void update(float elapsedTime, const gd::Mouse& mouse, const gd::Keyboard& keyboard) override;
+		virtual void render(gd::Graph& graph) override;
 		virtual void exit(Graph& graph) override;
 		virtual void resize(int width, int height) override;
 
@@ -33,6 +34,7 @@ namespace gd
 		virtual HICON getIcon() const;
 		virtual void setGDWindow(Window* gdWindow) final;
 		virtual void setSize(int width, int height) final;
+		virtual double getFps() const;
 		virtual void closeWindow() final;
 
 	protected:

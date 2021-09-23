@@ -13,6 +13,7 @@ class CustomComponent : public RootComponent
 public:
     float t = 0.f;
     int width, height;
+    int mouseX, mouseY;
     Capture wallpaperCapture, listviewCapture;
     std::unique_ptr<Icons> icons;
     void init(gd::Graph& graph) override
@@ -30,15 +31,23 @@ public:
         icons = std::make_unique<Icons>(desk.value.listview);
         icons->update();
     }
-    void render(gd::Graph& graph, const gd::Mouse& mouse, const gd::Keyboard& keyboard) override
+    void update(float elapsedTime, const gd::Mouse& mouse, const gd::Keyboard& keyboard) override
     {
-        RootComponent::render(graph, mouse, keyboard);
+        RootComponent::update(elapsedTime, mouse, keyboard);
 
         // 終了のショートカットキー
         if (
             keyboard.keys.count(VK_ESCAPE) ||  // 'Esc'キー
             keyboard.keys.count(0x51)          // 'Q'キー
         ) { closeWindow(); }
+
+        // マウス座標
+        mouseX = mouse.point.x;
+        mouseY = mouse.point.y;
+    }
+    void render(gd::Graph& graph) override
+    {
+        RootComponent::render(graph);
 
         // 壁紙の描画
         graph.setRenderMode(BlendMode::Opaque, DepthMode::DepthNone, RasterizerMode::CullNone);
@@ -52,12 +61,11 @@ public:
             graph.image(listviewCapture.getImage(), icon.itemArea(), position, {0.0, 0.0}, 0.0);
         }
 
-        auto p1 = mouse.point;
         float c = .5f + .5f * std::sin(t+=0.01);
         graph.setRenderMode(BlendMode::AlphaBlend1, DepthMode::DepthNone, RasterizerMode::CullNone);
         graph.fill(c, c, c, .5f);
         graph.stroke(1.f, 0.f, 0.f, 0.5f);
-        graph.ellipse(p1.x, p1.y, 100.f, 10.f, 32);
+        graph.ellipse(mouseX, mouseY, 100.f, 10.f, 32);
 
         graph.fill(1.f, 0.f, 0.f, .0f);
         graph.stroke(1.f, 0.f, 0.f, 0.5f);

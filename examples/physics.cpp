@@ -33,17 +33,20 @@ public:
 		// オブジェクトの生成
 		for (int i = 0; i < 9; i++) {
 			obj.emplace_back(world.createObj(
-				70.0f * i, 10.0f, 60.0f, 100.0f, PhysicsObjType::DYNAMIC, 0x0001, 0x0001
+				70.0f * i, 10.0f, 60.0f, 100.0f, PhysicsObjType::DYNAMIC
 			));
 		}
     }
 
-    void render(gd::Graph& graph, const gd::Mouse& mouse, const gd::Keyboard& keyboard) override {
-        RootComponent::render(graph, mouse, keyboard);
+	POINTS mouse;
+	void update(float elapsedTime, const gd::Mouse& mouse, const gd::Keyboard& keyboard) override {
+        RootComponent::update(elapsedTime, mouse, keyboard);
         if (keyboard.keys.count(VK_ESCAPE)) { closeWindow(); }
-        graph.setRenderMode(BlendMode::AlphaBlend1, DepthMode::DepthNone, RasterizerMode::CullNone);
-        graph.fill(0xF0F0F0, 0xFF);
-        graph.rect(0, 0, width, height, 0.0f);
+
+		this->mouse = mouse.point;
+
+        // 現在のフレームレートをPhysicsWorldに伝える
+        world.setFps(getFps());
 
 		// ドラッグ処理
 		if (mouse.lRelease()) drag_picker.reset();
@@ -55,19 +58,21 @@ public:
 		}
 		if (drag_picker) drag_picker->setPosition(mouse.point.x, mouse.point.y);
 
-		// 右クリックでオブジェクトを集める
-		if (mouse.rPressed) {
-			for (auto& o : obj) o->spring(mouse.point.x, mouse.point.y, 60.0f);
-		}
-
 		// 物理演算
 		world.update(60.0f);
+	}
+
+    void render(gd::Graph& graph) override {
+        RootComponent::render(graph);
+        graph.setRenderMode(BlendMode::AlphaBlend1, DepthMode::DepthNone, RasterizerMode::CullNone);
+        graph.fill(0xF0F0F0, 0xFF);
+        graph.rect(0, 0, width, height, 0.0f);
 
 		// オブジェクト数分ループ
 		for (auto& o : obj) {
 			// 色の指定
 			if (drag_picker && o == drag_picker->getObj()) graph.fill(0xFF00FF, 0x7F);
-			else if (o->isHit(mouse.point.x, mouse.point.y)) graph.fill(0xFF00FF, 0xFF);
+			else if (o->isHit(mouse.x, mouse.y)) graph.fill(0xFF00FF, 0xFF);
 			else graph.fill(0x404040, 0xFF);
 
 			// 四角形の描画

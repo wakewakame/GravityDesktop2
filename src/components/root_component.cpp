@@ -8,9 +8,13 @@ void gd::RootComponent::init(gd::Graph& graph)
 {
 	Component::init(graph);
 }
-void gd::RootComponent::render(gd::Graph& graph, const gd::Mouse& mouse, const gd::Keyboard& keyboard)
+void gd::RootComponent::update(float elapsedTime, const gd::Mouse& mouse, const gd::Keyboard& keyboard)
 {
-	Component::render(graph, mouse, keyboard);
+	Component::update(elapsedTime, mouse, keyboard);
+}
+void gd::RootComponent::render(gd::Graph& graph)
+{
+	Component::render(graph);
 }
 void gd::RootComponent::exit(gd::Graph& graph)
 {
@@ -35,6 +39,7 @@ void gd::RootComponent::setSize(int width, int height)
 {
 	gdWindow->OnWindowSizeChanged(width, height);
 }
+double gd::RootComponent::getFps() const { return 60.0; }
 void gd::RootComponent::closeWindow()
 {
 	if (hWnd) PostMessageW(hWnd, static_cast<UINT>(WM_APP_LIST::EXIT), 0, 0);

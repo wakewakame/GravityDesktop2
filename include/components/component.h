@@ -13,10 +13,22 @@ namespace gd
 		Component() {};
 		virtual ~Component() {};
 
+		// 生成時に呼び出される
 		virtual void init(Graph& graph) {}
-		virtual void render(gd::Graph& graph, const gd::Mouse& mouse, const gd::Keyboard& keyboard) {}
+
+		// updateは一定のフレームレートで呼び出される
+		virtual void update(float elapsedTime, const gd::Mouse& mouse, const gd::Keyboard& keyboard) {}
+
+		// renderはWM_PAINTが送られてくる度に呼び出される
+		virtual void render(gd::Graph& graph) {}
+
+		// 終了時に呼び出される
 		virtual void exit(Graph& graph) {}
+
+		// リサイズ時に呼び出される
 		virtual void resize(int width, int height) {}
+
+		// コンポーネント名を決める
 		virtual std::string getTitle() const { return "default component"; }
 	};
 }

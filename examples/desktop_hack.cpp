@@ -16,22 +16,35 @@ public:
     // ウィンドウの描画範囲
     int width, height;
 
+    // マウス座標
+    int mouseX, mouseY;
+
     // 初期化時に呼び出されるメソッド
     void init(gd::Graph& graph) override
     {
         FakeDesktopComponent::init(graph);
     }
 
-    // 画面に描画する処理を行うメソッド
-    void render(gd::Graph& graph, const gd::Mouse& mouse, const gd::Keyboard& keyboard) override
+    // 一定のフレームレートで呼び出されるメソッド
+    void update(float elapsedTime, const gd::Mouse& mouse, const gd::Keyboard& keyboard) override
     {
-        FakeDesktopComponent::render(graph, mouse, keyboard);
+        FakeDesktopComponent::update(elapsedTime, mouse, keyboard);
 
         // 終了のショートカットキー
         if (
             keyboard.keys.count(VK_ESCAPE) ||  // 'Esc'キー
             keyboard.keys.count(0x51)          // 'Q'キー
         ) { closeWindow(); }
+
+        // マウス座標
+        mouseX = mouse.point.x;
+        mouseY = mouse.point.y;
+    }
+
+    // 画面に描画する処理を行うメソッド
+    void render(gd::Graph& graph) override
+    {
+        FakeDesktopComponent::render(graph);
 
         // 合成モードなどの指定
         graph.setRenderMode(BlendMode::Opaque, DepthMode::DepthNone, RasterizerMode::CullNone);
@@ -43,7 +56,7 @@ public:
         // マウス座標に図形を描画
         graph.fill(0xFF00FF, 0xFF);
         graph.stroke(0x000000, 0x7F);
-        graph.ellipse(mouse.point.x, mouse.point.y, 100.f, 10.f, 32);
+        graph.ellipse(mouseX, mouseY, 100.f, 10.f, 32);
     }
 
 	// ウィンドウの作成時、リサイズ時に呼び出されるメソッド

@@ -11,19 +11,26 @@ namespace gd
 		KINEMATIC
 	};
 
+	struct PhysicsWorldStatus_ {
+		float fps;
+		const float pixel_per_meter;
+		PhysicsWorldStatus_(float fps, float pixel_per_meter);
+	};
+	using PhysicsWorldStatus = std::shared_ptr<PhysicsWorldStatus_>;
+
 	class PhysicsObj_
 	{
 	private:
 		std::shared_ptr<b2World> world;  // Box2D空間
 		b2Body *body = nullptr;          // 矩形 (ポインタの解放はbox2dが担う)
 		b2Vec2 size;                     // 矩形のサイズ
-		const float pixel_per_meter;     // 1メートルあたりのピクセル数
+		PhysicsWorldStatus status;       // PhysicsWorldの情報
 
 	public:
 		PhysicsObj_(
 			std::shared_ptr<b2World> world,
 			b2Vec2 position, b2Vec2 size, PhysicsObjType type,
-			float pixel_per_meter,
+			PhysicsWorldStatus status,
 			uint16_t categoryBits = 0x0001, uint16_t maskBits = 0xFFFF
 		);
 		virtual ~PhysicsObj_();
@@ -46,7 +53,7 @@ namespace gd
 		b2Joint *joint = nullptr;  // 結合 (ポインタの解放はbox2dが担う)
 
 	public:
-		PhysicsPicker_(std::shared_ptr<b2World> world, PhysicsObj obj, b2Vec2 anchor, float pixel_per_meter);
+		PhysicsPicker_(std::shared_ptr<b2World> world, PhysicsObj obj, b2Vec2 anchor, PhysicsWorldStatus status);
 		virtual ~PhysicsPicker_();
 		void destroy();
 		void setPosition(float x, float y);
@@ -58,7 +65,7 @@ namespace gd
 	{
 	private:
 		std::shared_ptr<b2World> world;  // Box2D空間
-		const float pixel_per_meter;     // 1メートルあたりのピクセル数
+		PhysicsWorldStatus status;       // PhysicsWorldの情報
 		std::vector<PhysicsObj> walls;   // 壁
 
 		/*
@@ -69,20 +76,16 @@ namespace gd
 		*/
 
 	public:
-		PhysicsWorld(const float pixel_per_meter = 200.0f);
+		PhysicsWorld(float fps = 60.0f, float pixel_per_meter = 200.0f);
 		void resizeWorld(float width, float height);
-		void update(float fps = 60.0f, int32_t velocityIterations = 6, int32_t positionIterations = 2);
+		void update(int32_t velocityIterations = 6, int32_t positionIterations = 2);
 		PhysicsObj createObj(
 			float x, float y, float width, float height, PhysicsObjType type,
 			uint16_t categoryBits = 0x0001, uint16_t maskBits = 0xFFFF
 		);
+		void setFps(float fps);
 		void setGravity(float x, float y);
 		void setEarthGravity();
-		PhysicsPicker createPicker(
-			PhysicsObj& obj, float x, float y
-		)
-		{
-			return std::make_shared<PhysicsPicker_>(world, obj, b2Vec2{ x, y }, pixel_per_meter);
-		}
+		PhysicsPicker createPicker(PhysicsObj& obj, float x, float y);
 	};
 }

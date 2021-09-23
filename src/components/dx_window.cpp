@@ -35,12 +35,18 @@ void gd::Window::Initialize(HWND window, int width, int height)
     m_timer.SetTargetElapsedSeconds(1.0 / 60);
     */
 
-    m_timer.SetTargetElapsedSeconds(1.0 / 60.0);
+    m_timer.SetFixedTimeStep(true);
 }
 
 // Executes the basic game loop.
 void gd::Window::Tick()
 {
+    // Updateを呼び出すフレームレートの更新
+    if (root_component)
+    {
+        m_timer.SetTargetElapsedSeconds(1.0 / root_component->getFps());
+    }
+
     m_timer.Tick([&]()
     {
         Update(m_timer);
@@ -55,6 +61,17 @@ void gd::Window::Update(DX::StepTimer const& timer)
     float elapsedTime = float(timer.GetElapsedSeconds());
 
     // TODO: Add your game logic here.
+
+    // rootComponent::updateを呼び出す
+    if (root_component)
+    {
+        mouseProc.nextFrame();
+        keyboardProc.nextFrame();
+        const Mouse mouse = mouseProc.getMouseStatus();
+        const Keyboard keyboard = keyboardProc.getKeyboardStatus();
+
+        root_component->update(elapsedTime, mouse, keyboard);
+    }
 }
 
 // Draws the scene.
@@ -73,12 +90,7 @@ void gd::Window::Render()
     // rootComponent::renderを呼び出す
     if (root_component)
     {
-        mouseProc.nextFrame();
-        keyboardProc.nextFrame();
-        const Mouse mouse = mouseProc.getMouseStatus();
-        const Keyboard keyboard = keyboardProc.getKeyboardStatus();
-
-        root_component->render(graph, mouse, keyboard);
+        root_component->render(graph);
     }
 
     Present();
@@ -229,6 +241,7 @@ void gd::Window::SetRootComponent(std::unique_ptr<gd::RootComponent>&& root_comp
 {
     if (!static_cast<bool>(root_component)) return;
     this->root_component.swap(root_component);
+    m_timer.SetTargetElapsedSeconds(1.0 / this->root_component->getFps());
     this->root_component->setHwnd(m_window);
     this->root_component->setGDWindow(this);
     this->root_component->resize(m_outputWidth, m_outputHeight);
