@@ -8,16 +8,19 @@
 
 namespace gd
 {
-	class Icon {
+	class Icon_ {
+		friend class Icons;
 	public:
-		Icon(HWND hWnd, HANDLE hProc, LPVOID ptr, size_t index)
+		Icon_(HWND hWnd, HANDLE hProc, LPVOID ptr, size_t index)
 			: hWnd(hWnd), hProc(hProc), ptr(ptr), index(index) {}
-		virtual ~Icon() {}
+		virtual ~Icon_() {}
 
 		const size_t index;  // 0から始まるアイコンの番号
 
 		bool update()
 		{
+			if (!enable) return 1;
+
 			// アイコン部分の範囲取得
 			iconArea_.left = LVIR_ICON;
 			if (WriteProcessMemory(hProc, ptr, &iconArea_, sizeof(RECT), NULL) == 0) return 1;
@@ -42,12 +45,14 @@ namespace gd
 			return 0;
 		}
 
-		bool select(UINT state, UINT stateMask)
+		bool select(bool select = true)
 		{
+			if (!enable) return 1;
+
 			// アイテムのステータス変更
 			LVITEM lvi{};  // 初期化子を呼ぶとゼロで初期化される
-			lvi.state = state;
-			lvi.stateMask = stateMask;
+			lvi.state = select ? (LVIS_FOCUSED | LVIS_SELECTED) : 0;
+			lvi.stateMask = LVIS_FOCUSED | LVIS_SELECTED;
 			if (WriteProcessMemory(hProc, ptr, &lvi, sizeof(LVITEM), NULL) == 0) return 1; // ptrにitem代入
 			SendMessage(hWnd, LVM_SETITEMSTATE, index, (LPARAM)ptr);
 
@@ -55,8 +60,8 @@ namespace gd
 			SendMessage(hWnd, WM_ACTIVATE, WA_CLICKACTIVE, 0);
 
 			// 代入
-			isSelect_ = 1;
-			isFocus_ = 1;
+			isSelect_ = select;
+			isFocus_ = select;
 
 			// 処理終了
 			return 0;
@@ -64,6 +69,8 @@ namespace gd
 
 		bool hot()
 		{
+			if (!enable) return 1;
+
 			// ホットアイテム設定
 			SendMessage(hWnd, LVM_SETHOTITEM, index, 0);
 
@@ -74,6 +81,7 @@ namespace gd
 			return 0;
 		}
 
+		bool isEnable() const { return enable; };
 		RECT iconArea() const { return iconArea_; };
 		RECT itemArea() const { return itemArea_; };
 		bool isSelect() const { return isSelect_; };
@@ -81,6 +89,7 @@ namespace gd
 		bool isHot() const { return isHot_; }
 
 	private:
+		bool enable = true;  // 現在も使用可能なアイコンかどうか
 		const HWND   hWnd;   // SysListViewのウィンドウハンドル
 		const HANDLE hProc;  // SysListViewのプロセスハンドル
 		const LPVOID ptr;    // SysListViewに生成したメモリの先頭ポインタ
@@ -90,6 +99,7 @@ namespace gd
 		bool isFocus_ = false;
 		bool isHot_ = false;
 	};
+	using Icon = std::shared_ptr<Icon_>;
 
 	class Icons
 	{
@@ -120,21 +130,43 @@ namespace gd
 			// アイコン数に変更があれば配列長更新
 			if (icons.size() != numItems)
 			{
+				for (Icon& icon : icons) { icon->enable = false; }
 				icons.clear();
 				icons.reserve(numItems);
 				for (size_t i = 0; i < numItems; i++)
 				{
-					icons.emplace_back(hWnd, hProc, ptr, i);
+					icons.emplace_back(std::make_shared<Icon_>(hWnd, hProc, ptr, i));
 				}
 			}
 
 			// 全アイコン情報更新
 			for (Icon& icon : icons)
 			{
-				if (icon.update()) return 1;
+				if (icon->update()) return 1;
 			}
 
 			return 0;
+		}
+
+		/**
+		 * 全てのアイコンを選択状態にする
+		 */
+		void allselect()
+		{
+			// アイテムのステータス変更
+			LVITEM lvi{};  // 初期化子を呼ぶとゼロで初期化される
+			lvi.state = LVIS_FOCUSED | LVIS_SELECTED;
+			lvi.stateMask = LVIS_FOCUSED | LVIS_SELECTED;
+			if (WriteProcessMemory(hProc, ptr, &lvi, sizeof(LVITEM), NULL) == 0) return;
+			PostMessage(hWnd, LVM_SETITEMSTATE, -1, (LPARAM)ptr);
+
+			// フォーカスを有効化する為にウィンドウをアクティブにする
+			PostMessage(hWnd, WM_ACTIVATE, WA_CLICKACTIVE, 0);
+
+			for (Icon& icon : icons) {
+				icon->isSelect_ = true;
+				icon->isFocus_ = true;
+			}
 		}
 
 		/**
@@ -147,16 +179,27 @@ namespace gd
 			lvi.state = 0;
 			lvi.stateMask = LVIS_FOCUSED | LVIS_SELECTED;
 			if (WriteProcessMemory(hProc, ptr, &lvi, sizeof(LVITEM), NULL) == 0) return;
-			SendMessage(hWnd, LVM_SETITEMSTATE, -1, (LPARAM)ptr);
+			PostMessage(hWnd, LVM_SETITEMSTATE, -1, (LPARAM)ptr);
 
 			// フォーカスを有効化する為にウィンドウをアクティブにする
-			SendMessage(hWnd, WM_ACTIVATE, WA_CLICKACTIVE, 0);
+			PostMessage(hWnd, WM_ACTIVATE, WA_CLICKACTIVE, 0);
+
+			for (Icon& icon : icons) {
+				icon->isSelect_ = false;
+				icon->isFocus_ = false;
+			}
 		}
 
 		/**
 		 * 全てのアイコンを「マウスカーソルが触れていない」状態にする
 		 */
-		void unhot() { PostMessage(hWnd, WM_MOUSEMOVE, 0, MAKELPARAM(0, 0)); }
+		void unhot() {
+			PostMessage(hWnd, WM_MOUSEMOVE, 0, MAKELPARAM(0, 0));
+
+			for (Icon& icon : icons) {
+				icon->isHot_ = false;
+			}
+		}
 
 	private:
 		const HWND hWnd;          // SysListViewのウィンドウハンドル

@@ -41,6 +41,8 @@ namespace gd
 		float getAngle() const;
 		void setPosition(float x, float y);
 		b2Vec2 getLocalPosition(float x, float y) const;
+		void setTransform(float x, float y, float angle);
+		void setEnabled(bool flag);
 		bool isHit(float x, float y) const;
 		b2Body* getb2Body();
 	};
@@ -84,8 +86,10 @@ namespace gd
 			uint16_t categoryBits = 0x0001, uint16_t maskBits = 0xFFFF
 		);
 		void setFps(float fps);
+		float getFps();
 		void setGravity(float x, float y);
 		void setEarthGravity();
 		PhysicsPicker createPicker(PhysicsObj& obj, float x, float y);
+		void wakeUpAll();
 	};
 }

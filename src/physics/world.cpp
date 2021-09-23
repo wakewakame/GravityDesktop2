@@ -21,7 +21,6 @@ PhysicsObj_::PhysicsObj_(
 		                                    b2_kinematicBody;
 	bodyDef.position = (1.0f / status->pixel_per_meter) * (position + (0.5 * size));
 	bodyDef.angularDamping = 0.0f;
-	//bodyDef.allowSleep = false;
 	b2PolygonShape bodyShape;
 	bodyShape.SetAsBox(size.x * 0.5 / status->pixel_per_meter, size.y * 0.5 / status->pixel_per_meter);
 	b2FixtureDef fixtureDef;
@@ -62,7 +61,15 @@ b2Vec2 PhysicsObj_::getPosition() const { return status->pixel_per_meter * body-
 
 b2Vec2 PhysicsObj_::getSize() const { return size; }
 
-float PhysicsObj_::getAngle() const { return body->GetAngle(); }
+float PhysicsObj_::getAngle() const {
+	// 回転をスムーズに0に近づけるときに
+	// 角度が 0 <= angle < 2pi だと動きが不自然になるので
+	// -pi <= angle < pi の範囲に変換する
+	static const float pi2 = acos(-1.0f) * 2.0f;
+	float angle = body->GetAngle();
+	angle = angle - pi2 * std::floor(angle / pi2 + 0.5);
+	return angle;
+}
 
 void PhysicsObj_::setPosition(float x, float y) {
 	body->SetAwake(true);
@@ -79,6 +86,15 @@ b2Vec2 PhysicsObj_::getLocalPosition(float x, float y) const {
 	};
 	const b2Vec2 localPosition = b2Mul(rotate, b2Vec2{ x, y } - getPosition());
 	return localPosition;
+}
+
+void PhysicsObj_::setTransform(float x, float y, float angle) {
+	body->SetAwake(true);
+	body->SetTransform(b2Vec2{ x / status->pixel_per_meter, y / status->pixel_per_meter }, angle);
+}
+
+void PhysicsObj_::setEnabled(bool flag) {
+	body->SetEnabled(flag);
 }
 
 bool PhysicsObj_::isHit(float x, float y) const {
@@ -187,7 +203,10 @@ PhysicsObj PhysicsWorld::createObj(
 
 void PhysicsWorld::setFps(float fps) { status->fps = fps; }
 
+float PhysicsWorld::getFps() { return status->fps; }
+
 void PhysicsWorld::setGravity(float x, float y) {
+	wakeUpAll();
 	world->SetGravity(b2Vec2{ x / status->pixel_per_meter, y / status->pixel_per_meter });
 }
 
@@ -198,4 +217,16 @@ void PhysicsWorld::setEarthGravity() {
 PhysicsPicker PhysicsWorld::createPicker(PhysicsObj& obj, float x, float y)
 {
 	return std::make_shared<PhysicsPicker_>(world, obj, b2Vec2{ x, y }, status);
+}
+
+void PhysicsWorld::wakeUpAll()
+{
+	// 全ての動的オブジェクトがリサイズ後の範囲内に収まるように再配置
+	b2Body* b = world->GetBodyList();
+	while (b) {
+		if (b2_dynamicBody == b->GetType()) {
+			b->SetAwake(true);
+		}
+		b = b->GetNext();
+	}
 }
