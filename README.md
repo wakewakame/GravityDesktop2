@@ -8,19 +8,11 @@
 初代 [Gravity Desktop](https://github.com/wakewakame/GravityDesktop) は C++ を勉強し始めたころに作成したもので、このプログラムにはあまり納得できていませんでした。
 今は少し C++ が上達したので、改めてこれを作り直すことにしました。
 
-# 仕組み
-デスクトップの画面を再現したウィンドウを全画面に表示することでアイコンが落下しているように見せています。
-具体的な処理の流れは以下の通りです。  
-
-1. Win32APIを用いてデスクトップ上の全てのアイコンの座標を取得する
-2. 1の座標を用いてBox2Dの仮想空間の中に長方形を生成する
-3. Windowsの隠しAPIであるDwmGetDxSharedSurfaceを用いてデスクトップのアイコンをαチャンネル付きでキャプチャする
-4. 2で生成した落下する長方形に、3で取得したアイコンのキャプチャを貼り付ける
-5. ウィンドウに対して送られてくるマウスイベントなどを座標変換したのちにデスクトップに転送する
-6. 3に戻る
 
 # ダウンロード
-作成中...
+[GravityDesktop2 v1.0.0](https://github.com/wakewakame/GravityDesktop2/releases/download/v1.0.0/GravityDesktop2.zip)  
+
+ダウンロード後、 `GravityDesktop2.zip` を展開し、 `GravityDesktop.exe` を実行するとデスクトップのアイコンが落下します。
 
 
 # 操作方法
@@ -71,3 +63,15 @@ cmake -E tar "cfv" GravityDesktop2.zip --format=zip GravityDesktop2.exe hook.dll
 | lib/box2d/                 | 二次元の物理演算ライブラリです。 |
 | examples/                  | サンプルプログラムがまとまっています。 |
 | CMakeLists.txt             | CMakeLists.txtです。CMakeで環境構築するので、それに使います。 |
+
+
+# 仕組み
+デスクトップの画面を再現したウィンドウを全画面に表示することでアイコンが落下しているように見せています。
+具体的な処理の流れは以下の通りです。  
+
+1. Win32APIを用いてデスクトップ上の全てのアイコンの座標を取得する
+2. 1の座標を用いてBox2Dの仮想空間の中に長方形を生成する
+3. Windowsの隠しAPIであるDwmGetDxSharedSurfaceを用いてデスクトップのアイコンをαチャンネル付きでキャプチャする
+4. 2で生成した落下する長方形に、3で取得したアイコンのキャプチャを貼り付ける
+5. ウィンドウに対して送られてくるマウスイベントなどを座標変換したのちにデスクトップに転送する
+6. 3に戻る
