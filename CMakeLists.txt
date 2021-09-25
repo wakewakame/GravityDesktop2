@@ -4,16 +4,24 @@ cmake_minimum_required(VERSION 3.16)
 # プロジェクトの作成
 project(GravityDesktop2 LANGUAGES CXX)
 
-# 依存ライブラリを読み込む
-set(LIBRARIES_PATH ${PROJECT_SOURCE_DIR}/lib)
-add_subdirectory(${LIBRARIES_PATH}/hook)
-add_subdirectory(${LIBRARIES_PATH}/DirectXTK)
-add_subdirectory(${LIBRARIES_PATH}/box2d)
-
 # C++17を使用する
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+
+# 依存ライブラリを読み込む
+set(LIBRARIES_PATH ${PROJECT_SOURCE_DIR}/lib)
+add_subdirectory(${LIBRARIES_PATH}/DirectXTK)
+add_subdirectory(${LIBRARIES_PATH}/box2d)
+
+# hookライブラリの作成
+add_library(hook SHARED
+
+	${LIBRARIES_PATH}/hook/hook.cpp
+	${LIBRARIES_PATH}/hook/hook.def
+
+)
+target_include_directories(hook PRIVATE ${PROJECT_SOURCE_DIR})
 
 # 全てのcppファイルを再帰的に検索する
 file(GLOB_RECURSE ALL_CPP_FILES ${PROJECT_SOURCE_DIR}/src/*.cpp)
