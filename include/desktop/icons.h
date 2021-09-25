@@ -81,7 +81,7 @@ namespace gd
 			return 0;
 		}
 
-		void double_click() {
+		void doubleClick() {
 			POINTS p{
 				(itemArea_.left + itemArea_.right) / 2,
 				(itemArea_.top + itemArea_.bottom) / 2
@@ -166,7 +166,7 @@ namespace gd
 			lvi.state = LVIS_FOCUSED | LVIS_SELECTED;
 			lvi.stateMask = LVIS_FOCUSED | LVIS_SELECTED;
 			if (WriteProcessMemory(hProc, ptr, &lvi, sizeof(LVITEM), NULL) == 0) return;
-			PostMessage(hWnd, LVM_SETITEMSTATE, -1, (LPARAM)ptr);
+			SendMessage(hWnd, LVM_SETITEMSTATE, -1, (LPARAM)ptr);
 
 			// フォーカスを有効化する為にウィンドウをアクティブにする
 			PostMessage(hWnd, WM_ACTIVATE, WA_CLICKACTIVE, 0);
@@ -187,7 +187,7 @@ namespace gd
 			lvi.state = 0;
 			lvi.stateMask = LVIS_FOCUSED | LVIS_SELECTED;
 			if (WriteProcessMemory(hProc, ptr, &lvi, sizeof(LVITEM), NULL) == 0) return;
-			PostMessage(hWnd, LVM_SETITEMSTATE, -1, (LPARAM)ptr);
+			SendMessage(hWnd, LVM_SETITEMSTATE, -1, (LPARAM)ptr);
 
 			// フォーカスを有効化する為にウィンドウをアクティブにする
 			PostMessage(hWnd, WM_ACTIVATE, WA_CLICKACTIVE, 0);

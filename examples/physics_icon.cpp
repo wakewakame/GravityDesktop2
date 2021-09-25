@@ -132,7 +132,7 @@ public:
 		if (mouse.lRelease()) drag_picker.reset();
 
         // ダブルクリックでファイルの実行
-        if (mouse.lDouble && iconObj) iconObj->icon->double_click();
+        if (mouse.lDouble && iconObj) iconObj->icon->doubleClick();
         
 		// 物理演算
 		world.update();

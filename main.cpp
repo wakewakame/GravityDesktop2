@@ -37,14 +37,23 @@ public:
         ParentComponent::init(graph);
 
         // デスクトップのウィンドウハンドル取得
-        desk = FakeDesktopComponent::getDesktopHwnd().value;
+        auto desk_ = FakeDesktopComponent::getDesktopHwnd();
+		if (desk_.isErr || desk_.isNone)
+		{
+			gd::Windows::error(desk_.description);
+			closeWindow();
+			return;
+		}
+        desk = desk_.value;
 
         // アイコンの取得
         iconObjs = std::make_unique<PhysicsIcons>(world, desk);
 
         // 対象のウィンドウハンドルをキャプチャ開始
-        wallpaperCapture.start(graph.getDeviceContext(), desk.wallpaper);
-        listviewCapture.start(graph.getDeviceContext(), desk.listview);
+        bool ret = false;
+        ret = ret || wallpaperCapture.start(graph.getDeviceContext(), desk.wallpaper);
+        ret = ret || listviewCapture.start(graph.getDeviceContext(), desk.listview);
+        if (ret) { closeWindow(); return; }
     }
     void update(float elapsedTime, const gd::Mouse& mouse, const gd::Keyboard& keyboard) {
         ParentComponent::update(elapsedTime, mouse, keyboard);
@@ -132,7 +141,7 @@ public:
 		if (mouse.lRelease()) drag_picker.reset();
 
         // ダブルクリックでファイルの実行
-        if (mouse.lDouble && iconObj) iconObj->icon->double_click();
+        if (mouse.lDouble && iconObj) iconObj->icon->doubleClick();
         
 		// 物理演算
 		world.update();
