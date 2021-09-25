@@ -35,14 +35,14 @@ public:
 
         // 壁紙の描画
         graph.setRenderMode(BlendMode::Opaque, DepthMode::DepthNone, RasterizerMode::CullNone);
-        graph.image(wallpaperCapture.getBackupImage());
+        graph.image(wallpaperCapture.getBackupImage(), RECT{ 0, 0, width, height });
 
         // 全アイコンの描画
         graph.setRenderMode(BlendMode::AlphaBlend2, DepthMode::DepthNone, RasterizerMode::CullNone);
         for (auto& icon : *icons)
         {
-            DirectX::XMFLOAT2 position = { (float)icon.itemArea().left, (float)icon.itemArea().top };
-            graph.image(listviewCapture.getImage(), icon.itemArea(), position, {0.0, 0.0}, 0.0);
+            DirectX::XMFLOAT2 position = { (float)icon->itemArea().left, (float)icon->itemArea().top };
+            graph.image(listviewCapture.getImage(), icon->itemArea(), position, {0.0, 0.0}, 0.0);
         }
 
         // アイコンを枠で囲う
@@ -50,8 +50,8 @@ public:
         graph.stroke(1.f, 0.f, 0.f, 0.5f);
         for (auto& icon : *icons)
         {
-            graph.rect(icon.itemArea().left, icon.itemArea().top, icon.itemArea().right, icon.itemArea().bottom, 1.f);
-            graph.rect(icon.iconArea().left, icon.iconArea().top, icon.iconArea().right, icon.iconArea().bottom, 1.f);
+            graph.rect(icon->itemArea().left, icon->itemArea().top, icon->itemArea().right, icon->itemArea().bottom, 1.f);
+            graph.rect(icon->iconArea().left, icon->iconArea().top, icon->iconArea().right, icon->iconArea().bottom, 1.f);
         }
     }
     void resize(int width, int height) override {

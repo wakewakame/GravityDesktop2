@@ -13,8 +13,7 @@
 
 using namespace gd;
 
-//using ParentComponent = FakeDesktopComponent;
-using ParentComponent = RootComponent;
+using ParentComponent = FakeDesktopComponent;
 class CustomComponent : public ParentComponent
 {
 public:
@@ -144,10 +143,14 @@ public:
 
         // 壁紙の描画
         graph.setRenderMode(BlendMode::Opaque, DepthMode::DepthNone, RasterizerMode::CullNone);
-        graph.image(wallpaperCapture.getBackupImage());
+        graph.image(wallpaperCapture.getBackupImage(), RECT{ 0, 0, width, height });
+
+        // 壁紙にアイコンの残像が残るのを防ぐため
+        // 終了時には壁紙のみを描画する
+        if (exit_step == 2) { exit_step = 3; }
+        if (exit_step == 3) { return; }
 
         // 全アイコンの描画
-        if (exit_step == 2) { exit_step = 3; return; }
         graph.setRenderMode(BlendMode::AlphaBlend2, DepthMode::DepthNone, RasterizerMode::CullNone);
         iconObjs->forEach([&](Icon icon, PhysicsObj obj) {
             b2Vec2 position_ = obj->getPosition();
@@ -170,7 +173,6 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 
     gd::Windows windows{ hInstance, nCmdShow };
 
-    CustomComponent component;
     ret = windows.create<CustomComponent>();
     if (ret) return 1;
 

@@ -23,7 +23,6 @@ namespace gd
 			std::vector<HWND> taskbars;           // 各モニターのタスクバーのウィンドウハンドル
 		};
 
-		FakeDesktopComponent() {}
 		virtual ~FakeDesktopComponent() {
 			/*
 			メモ
@@ -40,9 +39,13 @@ namespace gd
 
 		DWORD getWindowStyle() const override final { return WS_POPUP | WS_CHILD; }
 
-		void init(gd::Graph& graph) override
+		void update(float elapsedTime, const gd::Mouse& mouse, const gd::Keyboard& keyboard) override
 		{
-			RootComponent::init(graph);
+			RootComponent::update(elapsedTime, mouse, keyboard);
+			if (!firstUpdate) return;
+
+			firstUpdate = false;
+
 			HWND hWnd = getHwnd();
 
 			// デスクトップのウィンドウハンドルを取得する
@@ -77,22 +80,6 @@ namespace gd
 				closeWindow();
 				return;
 			}
-		}
-		void update(float elapsedTime, const gd::Mouse& mouse, const gd::Keyboard& keyboard) override
-		{
-			RootComponent::update(elapsedTime, mouse, keyboard);
-		}
-		void render(gd::Graph& graph) override
-		{
-			RootComponent::render(graph);
-		}
-		void exit(gd::Graph& graph) override
-		{
-			RootComponent::exit(graph);
-		}
-		void resize(int width, int height) override
-		{
-			RootComponent::resize(width, height);
 		}
 
 		// デスクトップのウィンドウハンドルを取得する
@@ -189,8 +176,9 @@ namespace gd
 			return Result<DesktopHwnds>::Ok(result);
 		}
 
-	protected:
+	private:
 		Result<DesktopHwnds> desktopHwnds;
+		bool firstUpdate = true;
 
 		/**
 		 * ウィンドウを透明にする
@@ -222,4 +210,4 @@ namespace gd
 			return true;
 		}
 	};
-}
+};

@@ -137,10 +137,6 @@ void gd::Window::OnWindowMessage(UINT message, WPARAM wParam, LPARAM lParam)
 
     switch (message)
     {
-    case static_cast<UINT>(WM_APP_LIST::EXIT):
-        DestroyWindow(m_window);
-        break;
-
     case WM_DESTROY:
         Exit();
         break;
@@ -245,7 +241,9 @@ void gd::Window::SetRootComponent(std::unique_ptr<gd::RootComponent>&& root_comp
     this->root_component->setHwnd(m_window);
     this->root_component->setGDWindow(this);
     this->root_component->resize(m_outputWidth, m_outputHeight);
+    Clear();
     this->root_component->init(graph);
+    Present();
 }
 
 void gd::Window::OnActivated()

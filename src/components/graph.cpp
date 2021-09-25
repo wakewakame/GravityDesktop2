@@ -295,20 +295,6 @@ int gd::Graph::ellipse(float x, float y, float r, float weight, uint8_t div)
     return 0;
 }
 
-int gd::Graph::image(const Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>& texture)
-{
-    m_spriteBatch->Begin(SpriteSortMode_Deferred, blendState, nullptr, depthState, rasterozerState, [=] {
-        float blendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-        m_d3dContext->OMSetBlendState(blendState, blendFactor, 0xffffffff);
-    });
-    m_spriteBatch->Draw(
-        texture.Get(),
-        DirectX::Colors::White  // スプライトを着色する色
-    );
-    m_spriteBatch->End();
-    return 0;
-}
-
 int gd::Graph::image(
     const Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>& texture,
     const RECT area,

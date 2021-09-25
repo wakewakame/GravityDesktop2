@@ -165,12 +165,6 @@ int gd::Windows::waitUntilExit()
     return 0;
 }
 
-void gd::Windows::exit()
-{
-    // スレッドのメッセージキューにWM_QUITを送る
-    PostQuitMessage(0);
-}
-
 void gd::Windows::error(LPCWSTR description)
 {
     // エラーダイアログを表示する

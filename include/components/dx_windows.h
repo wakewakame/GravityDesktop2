@@ -60,11 +60,6 @@ namespace gd
 		int waitUntilExit();
 
 		/**
-		 * 全てのウィンドウを終了させます。
-		 */
-		void exit();
-
-		/**
 		 * エラー用のダイアログを表示します。
 		 * @param description エラーの説明文
 		 */

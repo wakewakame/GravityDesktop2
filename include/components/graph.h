@@ -117,7 +117,6 @@ namespace gd
 		int ellipse(float x, float y, float r, float weight = 1.f, uint8_t div = 32);
 
 
-		int image(const Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>& texture);
 		int image(
 			const Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>& texture,
 			const RECT area,

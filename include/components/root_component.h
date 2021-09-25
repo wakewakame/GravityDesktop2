@@ -6,11 +6,6 @@ namespace gd
 {
 	class Window;
 
-	enum class WM_APP_LIST : UINT
-	{
-		EXIT = WM_APP + 0x0000
-	};
-
 	class RootComponent : public Component
 	{
 	public:

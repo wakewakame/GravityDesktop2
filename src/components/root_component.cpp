@@ -40,7 +40,4 @@ void gd::RootComponent::setSize(int width, int height)
 	gdWindow->OnWindowSizeChanged(width, height);
 }
 double gd::RootComponent::getFps() const { return 60.0; }
-void gd::RootComponent::closeWindow()
-{
-	if (hWnd) PostMessageW(hWnd, static_cast<UINT>(WM_APP_LIST::EXIT), 0, 0);
-}
+void gd::RootComponent::closeWindow() { if (hWnd) PostMessage(hWnd, WM_CLOSE, NULL, NULL); }
