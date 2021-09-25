@@ -49,9 +49,12 @@ mkdir build
 cd build
 cmake ..
 cmake --build . --target GravityDesktop2 --target hook --config Release
+cd Release
+cmake -E tar "cfv" GravityDesktop2.zip --format=zip GravityDesktop2.exe hook.dll
 ```
 
 コマンドを実行すると `build/Release` フォルダの中に `GravityDesktop2.exe` が生成されます。
+また、配布をする際には `GravityDesktop2.zip` を配布します。
 
 
 # ファイル構成
