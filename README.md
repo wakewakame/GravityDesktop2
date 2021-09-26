@@ -52,7 +52,8 @@ cmake --build . --target GravityDesktop2 --target hook --config Release
 cd build\Release
 copy /Y ..\..\README.md .\
 copy /Y ..\..\CREDIT .\
-cmake -E tar "cfv" GravityDesktop2.zip --format=zip GravityDesktop2.exe hook.dll README.md CREDIT
+copy /Y ..\..\LICENSE .\
+cmake -E tar "cfv" GravityDesktop2.zip --format=zip GravityDesktop2.exe hook.dll README.md CREDIT LICENSE
 ```
 
 コマンドを実行すると `build/Release` フォルダの中に `GravityDesktop2.zip` が生成されます。

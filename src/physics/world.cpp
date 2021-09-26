@@ -20,7 +20,7 @@ PhysicsObj_::PhysicsObj_(
 		(PhysicsObjType::DYNAMIC == type) ? b2_dynamicBody  :
 		                                    b2_kinematicBody;
 	bodyDef.position = (1.0f / status->pixel_per_meter) * (position + (0.5 * size));
-	bodyDef.angularDamping = 0.0f;
+	bodyDef.angularDamping = 2.0f;
 	b2PolygonShape bodyShape;
 	bodyShape.SetAsBox(size.x * 0.5 / status->pixel_per_meter, size.y * 0.5 / status->pixel_per_meter);
 	b2FixtureDef fixtureDef;
