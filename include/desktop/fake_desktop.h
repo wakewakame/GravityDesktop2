@@ -49,13 +49,23 @@ namespace gd
 			HWND hWnd = getHwnd();
 
 			// デスクトップのウィンドウハンドルを取得する
-			desktopHwnds = getDesktopHwnd();
-			if (desktopHwnds.isErr || desktopHwnds.isNone)
+			auto desktopHwnds_ = getDesktopHwnd();
+			if (desktopHwnds_.isErr || desktopHwnds_.isNone)
 			{
-				Windows::error(desktopHwnds.description);
+				Windows::error(desktopHwnds_.description);
 				closeWindow();
 				return;
 			}
+
+			// 既に起動済みかをチェック
+			if (NULL != FindWindowEx(desktopHwnds_.value.wallpaper, NULL, NULL, NULL))
+			{
+				Windows::error(L"既に起動しています");
+				closeWindow();
+				return;
+			}
+
+			desktopHwnds = desktopHwnds_;
 
 			// 自身の親ウィンドウを壁紙のウィンドウに設定
 			SetParent(hWnd, desktopHwnds.value.wallpaper);
