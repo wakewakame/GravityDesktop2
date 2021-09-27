@@ -61,10 +61,12 @@ namespace gd
 			SetParent(hWnd, desktopHwnds.value.wallpaper);
 
 			// 自身のウィンドウの位置とサイズを調整する
-			RECT rc;
-			GetWindowRect(desktopHwnds.value.wallpaper, &rc);
-			SetWindowPos(hWnd, HWND_BOTTOM, 0, 0, rc.right - rc.left, rc.bottom - rc.top, 0);
-			setSize(rc.right - rc.left, rc.bottom - rc.top);
+			const UINT dpiA = 96;
+			const UINT dpiB = GetDpiForWindow(desktopHwnds.value.wallpaper);
+			RECT rc; GetClientRect(desktopHwnds.value.wallpaper, &rc);
+			const SIZE sz{ (rc.right - rc.left) * dpiB / dpiA, (rc.bottom - rc.top) * dpiB / dpiA };
+			SetWindowPos(hWnd, HWND_BOTTOM, 0, 0, sz.cx, sz.cy, 0);
+			setSize(sz.cx, sz.cy);
 
 			// デスクトップアイコンを透明にする
 			HWND ancestor = GetAncestor(desktopHwnds.value.listview, GA_ROOTOWNER);
