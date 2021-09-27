@@ -85,15 +85,6 @@ macro(gd_make_app)
 
 	)
 
-	# ビルド時に必要なdllを集めるようにする
-	add_custom_command(TARGET "${ARG_APP_NAME}" POST_BUILD
-
-		COMMAND ${CMAKE_COMMAND} -E copy_if_different
-		"$<TARGET_FILE_DIR:hook>/hook.dll"
-		"$<TARGET_FILE_DIR:"${ARG_APP_NAME}">"
-
-	)
-
 endmacro()
 
 # メインプログラムの作成

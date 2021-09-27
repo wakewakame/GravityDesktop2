@@ -50,9 +50,9 @@ cmake --build . --target GravityDesktop2 --target hook --config Release
 
 ```cmd
 cd build\Release
-copy /Y ..\..\README.md .\
-copy /Y ..\..\CREDIT .\
-copy /Y ..\..\LICENSE .\
+cmake -E copy ..\..\README.md .\
+cmake -E copy ..\..\CREDIT .\
+cmake -E copy ..\..\LICENSE .\
 cmake -E tar "cfv" GravityDesktop2.zip --format=zip GravityDesktop2.exe hook.dll README.md CREDIT LICENSE
 ```
 
