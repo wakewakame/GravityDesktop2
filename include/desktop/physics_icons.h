@@ -37,13 +37,13 @@ namespace gd
 			}
 
 			// タスクバーの壁を生成
-			const UINT dpiA = 96;
-			const UINT dpiB = GetDpiForWindow(desk.listview);
+			const int dpiA = 96;
+			const int dpiB = GetDpiForWindow(desk.listview);
 			RECT listview_rc; GetWindowRect(desk.listview, &listview_rc);
 			const POINT origin{ listview_rc.left * dpiB / dpiA, listview_rc.top * dpiB / dpiA };
 			for (HWND taskbar : desk.taskbars) {
 				RECT taskbar_rc; GetWindowRect(taskbar, &taskbar_rc);
-				const UINT dpiC = GetDpiForWindow(taskbar);
+				const int dpiC = GetDpiForWindow(taskbar);
 				taskbar_rc.left   = taskbar_rc.left    * dpiC / dpiA;
 				taskbar_rc.top    = taskbar_rc.top     * dpiC / dpiA;
 				taskbar_rc.right  = taskbar_rc.right   * dpiC / dpiA;
