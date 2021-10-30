@@ -11,7 +11,74 @@
 
 #include <SpriteBatch.h>
 
+#include <grpcpp/ext/proto_server_reflection_plugin.h>
+#include <grpcpp/grpcpp.h>
+#include <grpcpp/health_check_service_interface.h>
+#include "imu.grpc.pb.h"
+#include <thread>
+using grpc::Server;
+using grpc::ServerBuilder;
+using grpc::ServerContext;
+using grpc::Status;
+using imu::Imu;
+using imu::ImuFrame;
+using imu::Empty;
+
 using namespace gd;
+
+class ImuServiceImpl final : public Imu::Service {
+public:
+    std::mutex mtx;
+    b2Vec2 acc{ 0.0, 9.8 }, orig{ 0.0, 1.0 };
+	Status Send(ServerContext* context, const ImuFrame* request, Empty* reply) override {
+		std::lock_guard lock{ mtx };
+		acc = 2.0 * 9.8 * b2Vec2{
+            +static_cast<float>(request->acc_x()),
+            -static_cast<float>(request->acc_y()) };
+		return Status::OK;
+	}
+	Status Reset(ServerContext* context, const Empty* request, Empty* reply) override {
+		std::lock_guard lock{ mtx };
+        orig = acc; orig.Normalize();
+		return Status::OK;
+	}
+    b2Vec2 getAcc() {
+		std::lock_guard lock{ mtx };
+        const b2Vec2 orig_ = b2Vec2{ 0.0, 1.0 };
+        float r = std::acos(b2Dot(orig_, orig));
+        r = (orig.x * orig_.y - orig.y * orig_.x) >= 0.0 ? r : 4.0 * std::acos(0.0) - r;
+		const b2Mat22 rotate{
+			std::cos(r), -std::sin(r),
+			std::sin(r),  std::cos(r)
+		};
+		return b2Mul(rotate, acc);
+    }
+};
+
+class AccServer {
+private:
+	ImuServiceImpl service;
+	ServerBuilder builder;
+    std::unique_ptr<Server> server;
+    std::thread th;
+
+public:
+    AccServer(const std::string& server_address = "0.0.0.0:50051") {
+		grpc::EnableDefaultHealthCheckService(true);
+		grpc::reflection::InitProtoReflectionServerBuilderPlugin();
+		builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
+		builder.RegisterService(&service);
+		server = builder.BuildAndStart();
+		th = std::thread([&](){ server->Wait(); });
+    }
+    virtual ~AccServer() {
+		server->Shutdown();
+		th.join();
+    }
+    b2Vec2 getAcc() {
+        return service.getAcc();
+    }
+};
 
 using ParentComponent = FakeDesktopComponent;
 class CustomComponent : public ParentComponent
@@ -22,6 +89,7 @@ public:
     std::unique_ptr<PhysicsIcons> iconObjs;
     PhysicsPicker drag_picker;
     POINTS gravity_origin;
+    AccServer server;
 
     int exit_step = 0;
 
@@ -89,6 +157,9 @@ public:
         // Ctrl-Aで全選択
         if (Ctrl && AKey) iconObjs->allselect();
 
+        b2Vec2 acc = server.getAcc();
+        world.setGravity(acc.x * 200.0, acc.y * 200.0);
+
         // 1キーで重力の操作
         if (Key1) {
             if (!Key1_) { gravity_origin = mouse.point; }
@@ -98,11 +169,9 @@ public:
             };
             world.setGravity(gravity.x, gravity.y);
         }
-        else if (Key1_) world.setEarthGravity();
 
         // 2キーで無重力化
         if (Key2) world.setGravity(0.0f, 0.0f);
-        else if (Key2_) world.setEarthGravity();
 
 		// 3キーで全てのオブジェクトを集める
         if (Key3) iconObjs->forEach([&](Icon, PhysicsObj obj) {

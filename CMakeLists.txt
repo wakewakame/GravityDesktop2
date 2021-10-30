@@ -15,6 +15,48 @@ set(LIBRARIES_PATH ${PROJECT_SOURCE_DIR}/lib)
 add_subdirectory(${LIBRARIES_PATH}/DirectXTK)
 add_subdirectory(${LIBRARIES_PATH}/box2d)
 
+include(FetchContent)
+FetchContent_Declare(
+	gRPC
+	GIT_REPOSITORY https://github.com/grpc/grpc
+	GIT_TAG        v1.41.1
+)
+set(FETCHCONTENT_QUIET OFF)
+FetchContent_MakeAvailable(gRPC)
+set(_REFLECTION grpc++_reflection)
+set(_GRPC_GRPCPP grpc++)
+set(_PROTOBUF_LIBPROTOBUF libprotobuf)
+set(_PROTOBUF_PROTOC $<TARGET_FILE:protoc>)
+get_filename_component(hw_proto "./protos/imu.proto" ABSOLUTE)
+get_filename_component(hw_proto_path "${hw_proto}" PATH)
+set(hw_proto_srcs "${CMAKE_CURRENT_BINARY_DIR}/imu.pb.cc")
+set(hw_proto_hdrs "${CMAKE_CURRENT_BINARY_DIR}/imu.pb.h")
+set(hw_grpc_srcs  "${CMAKE_CURRENT_BINARY_DIR}/imu.grpc.pb.cc")
+set(hw_grpc_hdrs  "${CMAKE_CURRENT_BINARY_DIR}/imu.grpc.pb.h")
+add_custom_command(
+	OUTPUT "${hw_proto_srcs}" "${hw_proto_hdrs}" "${hw_grpc_srcs}" "${hw_grpc_hdrs}"
+	COMMAND ${_PROTOBUF_PROTOC}
+	ARGS
+		--grpc_out "${CMAKE_CURRENT_BINARY_DIR}"
+		--cpp_out "${CMAKE_CURRENT_BINARY_DIR}"
+		-I "${hw_proto_path}"
+		--plugin=protoc-gen-grpc=$<TARGET_FILE:grpc_cpp_plugin>
+		"${hw_proto}"
+	DEPENDS "${hw_proto}"
+)
+include_directories("${CMAKE_CURRENT_BINARY_DIR}")
+add_library(hw_grpc_proto
+	${hw_grpc_srcs}
+	${hw_grpc_hdrs}
+	${hw_proto_srcs}
+	${hw_proto_hdrs}
+)
+target_link_libraries(hw_grpc_proto
+	${_REFLECTION}
+	${_GRPC_GRPCPP}
+	${_PROTOBUF_LIBPROTOBUF}
+)
+
 # hookライブラリの作成
 add_library(hook SHARED
 
@@ -60,6 +102,11 @@ macro(gd_make_app)
 		comdlg32.lib advapi32.lib shell32.lib
 		ole32.lib oleaut32.lib comctl32.lib
 		runtimeobject.lib
+
+		hw_grpc_proto
+		${_REFLECTION}
+		${_GRPC_GRPCPP}
+		${_PROTOBUF_LIBPROTOBUF}
 
 	)
 

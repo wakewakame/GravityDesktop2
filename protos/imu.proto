@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package imu;
+
+service Imu {
+	rpc Send (ImuFrame) returns (Empty) {}
+	rpc Reset (Empty) returns (Empty) {}
+}
+
+message ImuFrame {
+	double timestamp = 1;
+	double acc_x     = 2;
+	double acc_y     = 3;
+	double acc_z     = 4;
+	double roll      = 5;
+	double pitch     = 6;
+	double yaw       = 7;
+}
+
+message Empty {}
