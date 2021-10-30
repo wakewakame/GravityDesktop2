@@ -1,3 +1,10 @@
+# requirement
+- MacOS
+- XCode
+- git
+- xcodegen
+- swift-protobuf
+
 # prepare
 
 ```bash

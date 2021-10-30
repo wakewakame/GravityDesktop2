@@ -7,3 +7,6 @@
 [submodule "lib/box2d"]
 	path = lib/box2d
 	url = https://github.com/erincatto/box2d.git
+[submodule "iOS-ClientApp/3rdparty/grpc-swift"]
+	path = iOS-ClientApp/3rdparty/grpc-swift
+	url = https://github.com/grpc/grpc-swift.git

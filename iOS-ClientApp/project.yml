@@ -1,0 +1,28 @@
+name: gRPC-Client
+
+packages:
+  grpc-swift:
+    url: https://github.com/grpc/grpc-swift.git
+    version: 1.5.0
+
+targets:
+  gRPC-Client:
+    sources: gRPC-Client
+    platform: iOS
+    type: application
+    dependencies:
+      - package: grpc-swift
+        product: GRPC
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: "wakewakame.tmp.gRPC-Client"
+        CODE_SIGN_STYLE: Manual
+      configs:
+        debug:
+          CODE_SIGN_IDENTITY: iPhone Developer
+          PROVISIONING_PROFILE_SPECIFIER: DevTemporary
+          DEVELOPMENT_TEAM: 67762NVFY8
+        release:
+          CODE_SIGN_IDENTITY: iPhone Developer
+          PROVISIONING_PROFILE_SPECIFIER: DevTemporary
+          DEVELOPMENT_TEAM: 67762NVFY8
